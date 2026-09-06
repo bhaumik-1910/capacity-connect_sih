@@ -1,0 +1,23 @@
+{
+  "name": "CAPACITY CONNECT - MoES & IMD",
+  "short_name": "CapacityConnect",
+  "description": "National Digital Capacity Building & Learning Management Ecosystem for the Ministry of Earth Sciences (MoES) and India Meteorological Department (IMD)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0B2545",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/logo-moes.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "education",
+    "government",
+    "meteorology"
+  ]
+}

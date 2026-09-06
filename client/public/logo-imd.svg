@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <linearGradient id="navySeal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B2545" />
+      <stop offset="50%" stop-color="#134074" />
+      <stop offset="100%" stop-color="#001845" />
+    </linearGradient>
+    <linearGradient id="goldBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="50%" stop-color="#D97706" />
+      <stop offset="100%" stop-color="#B45309" />
+    </linearGradient>
+    <linearGradient id="skyCenter" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7" />
+      <stop offset="100%" stop-color="#0369A1" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Outer Ring with Gold Trim -->
+  <circle cx="120" cy="120" r="116" fill="url(#navySeal)" stroke="url(#goldBorder)" stroke-width="4" filter="url(#shadow)" />
+  <circle cx="120" cy="120" r="110" fill="none" stroke="#FDE68A" stroke-width="1" stroke-dasharray="3,3" />
+
+  <!-- Inner Band for Circular Text -->
+  <circle cx="120" cy="120" r="82" fill="none" stroke="url(#goldBorder)" stroke-width="2.5" />
+
+  <!-- Circular Text Paths -->
+  <path id="topTextArc" d="M 28 120 A 92 92 0 0 1 212 120" fill="none" />
+  <path id="bottomTextArc" d="M 212 120 A 92 92 0 0 1 28 120" fill="none" />
+
+  <text font-family="'Inter', -apple-system, sans-serif" font-size="10.5" font-weight="900" fill="#FEF3C7" letter-spacing="2">
+    <textPath href="#topTextArc" startOffset="50%" text-anchor="middle">
+      MINISTRY OF EARTH SCIENCES
+    </textPath>
+  </text>
+
+  <text font-family="'Inter', -apple-system, sans-serif" font-size="10" font-weight="800" fill="#FDE68A" letter-spacing="1.5">
+    <textPath href="#bottomTextArc" startOffset="50%" text-anchor="middle">
+      • GOVT. OF INDIA • IMD •
+    </textPath>
+  </text>
+
+  <!-- Central Field -->
+  <circle cx="120" cy="120" r="78" fill="url(#skyCenter)" stroke="#0F172A" stroke-width="1.5" />
+
+  <!-- Atmospheric Isobars / Radar Rings -->
+  <circle cx="120" cy="120" r="62" fill="none" stroke="#BAE6FD" stroke-width="1" stroke-opacity="0.5" stroke-dasharray="4,4" />
+  <circle cx="120" cy="120" r="46" fill="none" stroke="#BAE6FD" stroke-width="1" stroke-opacity="0.6" />
+  <circle cx="120" cy="120" r="30" fill="none" stroke="#BAE6FD" stroke-width="1.5" stroke-opacity="0.7" />
+
+  <!-- Radar Sweep Line -->
+  <line x1="120" y1="120" x2="168" y2="72" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="168" cy="72" r="3" fill="#FBBF24" />
+
+  <!-- Stylized Sun & Atmospheric Cloud -->
+  <!-- Sun Rays -->
+  <g stroke="#FDE68A" stroke-width="2" stroke-linecap="round" opacity="0.9">
+    <line x1="120" y1="56" x2="120" y2="48" />
+    <line x1="140" y1="62" x2="146" y2="56" />
+    <line x1="100" y1="62" x2="94" y2="56" />
+    <line x1="152" y1="78" x2="160" y2="78" />
+    <line x1="88" y1="78" x2="80" y2="78" />
+  </g>
+  <circle cx="120" cy="78" r="14" fill="#F59E0B" stroke="#FDE68A" stroke-width="1.5" />
+
+  <!-- Stylized Cloud -->
+  <path d="M 85 115 C 80 115 75 120 75 126 C 75 132 80 137 86 137 L 154 137 C 162 137 168 131 168 123 C 168 116 162 110 155 110 C 153 102 145 96 136 96 C 128 96 122 100 119 106 C 115 101 108 98 102 99 C 93 100 86 106 85 115 Z" fill="#F8FAFC" opacity="0.95" filter="url(#shadow)" />
+
+  <!-- Lightning Bolt / Energy Accent -->
+  <polygon points="122,126 114,142 124,142 118,160 134,138 124,138" fill="#FBBF24" stroke="#D97706" stroke-width="1" />
+
+  <!-- Center Badge: "CAPACITY CONNECT" -->
+  <g transform="translate(120, 168)">
+    <rect x="-65" y="-10" width="130" height="20" rx="5" fill="#0B2545" stroke="url(#goldBorder)" stroke-width="1.5" />
+    <text x="0" y="4" text-anchor="middle" font-family="'Inter', -apple-system, sans-serif" font-size="9" font-weight="900" fill="#FDE68A" letter-spacing="1">
+      CAPACITY CONNECT
+    </text>
+  </g>
+
+  <!-- Stars on Trim -->
+  <polygon points="120,8 122,14 128,14 123,18 125,24 120,20 115,24 117,18 112,14 118,14" fill="#FBBF24" />
+  <polygon points="120,232 122,226 128,226 123,222 125,216 120,220 115,216 117,222 112,226 118,226" fill="#FBBF24" />
+</svg>

@@ -1,0 +1,13 @@
+{
+  "name": "capacity-connect",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=client",
+    "client:dev": "npm run dev --prefix client",
+    "server:dev": "npm run dev --prefix server"
+  }
+}

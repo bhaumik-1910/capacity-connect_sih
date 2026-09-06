@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 280" width="200" height="280">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="50%" stop-color="#D97706" />
+      <stop offset="100%" stop-color="#92400E" />
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+  </defs>
+
+  <!-- Crown / Lion Capital Crest -->
+  <g fill="url(#goldGrad)" stroke="#78350F" stroke-width="1.5">
+    <!-- Center Lion Head & Mane -->
+    <path d="M100 20 C85 20 75 32 75 48 C75 62 82 72 90 78 L90 100 L110 100 L110 78 C118 72 125 62 125 48 C125 32 115 20 100 20 Z" />
+    <!-- Left Lion Profile -->
+    <path d="M75 35 C62 35 52 45 50 60 C48 74 56 86 66 92 L76 100 L88 95 C82 85 78 74 78 62 C78 50 82 42 85 36 Z" />
+    <!-- Right Lion Profile -->
+    <path d="M125 35 C138 35 148 45 150 60 C152 74 144 86 134 92 L124 100 L112 95 C118 85 122 74 122 62 C122 50 118 42 115 36 Z" />
+    <!-- Ears & Details -->
+    <circle cx="86" cy="30" r="5" />
+    <circle cx="114" cy="30" r="5" />
+    <circle cx="58" cy="42" r="4" />
+    <circle cx="142" cy="42" r="4" />
+    <!-- Muzzle & Whiskers -->
+    <ellipse cx="100" cy="55" rx="10" ry="7" fill="#FEF3C7" />
+    <polygon points="100,50 96,54 104,54" fill="#78350F" />
+    <!-- Eyes -->
+    <ellipse cx="93" cy="44" rx="2.5" ry="3.5" fill="#78350F" />
+    <ellipse cx="107" cy="44" rx="2.5" ry="3.5" fill="#78350F" />
+    <circle cx="94" cy="43" r="1" fill="#FFF" />
+    <circle cx="108" cy="43" r="1" fill="#FFF" />
+  </g>
+
+  <!-- Pectoral & Mane Layer -->
+  <g fill="url(#goldGrad)" stroke="#78350F" stroke-width="1">
+    <path d="M68 95 C75 110 85 120 100 122 C115 120 125 110 132 95 L142 130 C130 142 115 146 100 146 C85 146 70 142 58 130 Z" />
+    <!-- Decorative curls -->
+    <path d="M72 105 Q80 115 88 105 Q96 118 100 108 Q104 118 112 105 Q120 115 128 105" fill="none" stroke="#92400E" stroke-width="2" />
+    <path d="M65 120 Q78 132 100 132 Q122 132 135 120" fill="none" stroke="#92400E" stroke-width="2" />
+  </g>
+
+  <!-- Capital Abacus (Base Platform) -->
+  <rect x="40" y="146" width="120" height="14" rx="3" fill="#D97706" stroke="#78350F" stroke-width="1.5" />
+  <rect x="36" y="160" width="128" height="42" rx="4" fill="#F8FAFC" stroke="#78350F" stroke-width="2" />
+
+  <!-- Center Ashoka Chakra on Abacus -->
+  <g transform="translate(100, 181)">
+    <circle cx="0" cy="0" r="15" fill="#FFF" stroke="#1E3A8A" stroke-width="2" />
+    <circle cx="0" cy="0" r="3" fill="#1E3A8A" />
+    <!-- 24 Spokes (rendered as 12 crossed lines) -->
+    <line x1="-15" y1="0" x2="15" y2="0" stroke="#1E3A8A" stroke-width="1" />
+    <line x1="0" y1="-15" x2="0" y2="15" stroke="#1E3A8A" stroke-width="1" />
+    <line x1="-10.6" y1="-10.6" x2="10.6" y2="10.6" stroke="#1E3A8A" stroke-width="1" />
+    <line x1="-10.6" y1="10.6" x2="10.6" y2="-10.6" stroke="#1E3A8A" stroke-width="1" />
+    <line x1="-13.8" y1="-5.8" x2="13.8" y2="5.8" stroke="#1E3A8A" stroke-width="1" />
+    <line x1="-13.8" y1="5.8" x2="13.8" y2="-5.8" stroke="#1E3A8A" stroke-width="1" />
+    <line x1="-5.8" y1="-13.8" x2="5.8" y2="13.8" stroke="#1E3A8A" stroke-width="1" />
+    <line x1="-5.8" y1="13.8" x2="5.8" y2="-13.8" stroke="#1E3A8A" stroke-width="1" />
+  </g>
+
+  <!-- Left Galloping Horse Silhouette -->
+  <path d="M46 182 C50 178 54 175 58 175 C60 175 62 178 64 180 L62 186 C58 184 54 185 50 188 L46 185 Z" fill="#92400E" />
+
+  <!-- Right Bull Silhouette -->
+  <path d="M136 182 C140 178 144 177 148 178 C152 179 154 182 152 186 L146 186 C143 184 140 185 138 187 Z" fill="#92400E" />
+
+  <!-- Inverted Lotus Base -->
+  <path d="M45 202 C55 212 75 218 100 218 C125 218 145 212 155 202 L150 208 C140 220 122 225 100 225 C78 225 60 220 50 208 Z" fill="url(#goldGrad)" stroke="#78350F" stroke-width="1" />
+  <rect x="30" y="224" width="140" height="6" rx="2" fill="#78350F" />
+
+  <!-- Motto: "सत्यमेव जयते" (Satyameva Jayate - Truth Alone Triumphs) -->
+  <text x="100" y="250" text-anchor="middle" font-family="'Noto Sans Devanagari', 'Mangal', 'Arial Unicode MS', sans-serif" font-size="14" font-weight="900" fill="#78350F" letter-spacing="1">
+    सत्यमेव जयते
+  </text>
+  <text x="100" y="265" text-anchor="middle" font-family="'Inter', sans-serif" font-size="9" font-weight="800" fill="#1E3A8A" letter-spacing="2">
+    GOVERNMENT OF INDIA
+  </text>
+</svg>

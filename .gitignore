@@ -1,0 +1,49 @@
+# ==============================================================================
+# CAPACITY CONNECT - ROOT GITIGNORE
+# ==============================================================================
+
+# 1. Dependency Directories (Do NOT push to Git)
+node_modules/
+*/node_modules/
+client/node_modules/
+server/node_modules/
+
+# 2. Production Build Outputs
+dist/
+build/
+client/dist/
+
+# 3. Environment Variables & Secrets (CRITICAL)
+.env
+.env.local
+.env.*.local
+*.env
+client/.env
+server/.env
+!.env.example
+!client/.env.example
+!server/.env.example
+
+# 4. User Uploaded Files, Scratch & Logs
+server/uploads/*
+!server/uploads/.gitkeep
+scratch/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 5. OS & IDE Metadata
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 6. Vercel & Deploy Artifacts
+.vercel/
+.turbo/

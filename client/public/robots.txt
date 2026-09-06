@@ -1,0 +1,29 @@
+# robots.txt for CAPACITY CONNECT - Ministry of Earth Sciences (MoES) & IMD
+# Official National Learning Management & Capacity Building Ecosystem
+
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /register
+Allow: /register-institute
+Allow: /login
+Allow: /verify
+Allow: /trainee/courses
+
+# Protect private workspaces and API routes
+Disallow: /admin/
+Disallow: /trainer/
+Disallow: /institute/
+Disallow: /api/
+Disallow: /*?*token=
+Disallow: /*?*session=
+
+# Search Engine Crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Sitemap Location
+Sitemap: https://capacityconnect.moes.gov.in/sitemap.xml
