@@ -8,7 +8,9 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "seed": "node seed/setupUsers.js",
-    "test": "node tests/verify_api.js"
+    "test": "node tests/verify_api.js",
+    "test:security": "node tests/verify_security_assessment.js",
+    "check:roles": "node scripts/check_all_roles.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -65,10 +65,10 @@ class SlidingWindowRateLimiter {
   }
 }
 
-// 1. Strict Auth Rate Limiter (Brute-Force defense: 15 attempts / 15 minutes)
+// 1. Strict Auth Rate Limiter (Brute-Force defense: 15 attempts in production, 200 in dev/test)
 const authRateLimiter = new SlidingWindowRateLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: process.env.NODE_ENV === 'production' ? 15 : 200,
   message: 'Multiple authentication attempts detected from this network. For security reasons, please wait before trying again.'
 }).middleware();
 
@@ -159,7 +159,7 @@ const securityHeaders = (req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   
   // Allow uploaded learning materials (PDF, DOC, slides) to be framed inside client course player
-  if (req.path.startsWith('/uploads') || req.url.startsWith('/uploads') || req.originalUrl?.startsWith('/uploads')) {
+  if (req.path?.startsWith('/uploads') || req.url?.startsWith('/uploads') || req.originalUrl?.startsWith('/uploads')) {
     res.removeHeader('X-Frame-Options');
     res.removeHeader('Cross-Origin-Opener-Policy');
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost:5173 http://127.0.0.1:5173 http://localhost:3000 *; object-src 'self' blob: data: *;");

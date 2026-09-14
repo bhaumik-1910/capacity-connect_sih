@@ -47,3 +47,7 @@ Thumbs.db
 # 6. Vercel & Deploy Artifacts
 .vercel/
 .turbo/
+
+# 7. Playwright Test Artifacts
+test-results/
+playwright-report/

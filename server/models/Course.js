@@ -76,6 +76,5 @@ const courseSchema = new mongoose.Schema({
 
 courseSchema.index({ status: 1, category: 1, createdAt: -1 });
 courseSchema.index({ trainerId: 1, createdAt: -1 });
-courseSchema.index({ code: 1 });
 
 module.exports = mongoose.model('Course', courseSchema);
