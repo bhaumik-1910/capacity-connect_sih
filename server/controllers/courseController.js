@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const Organization = require('../models/Organization');
 const { logAuditEvent } = require('../middleware/auditLogger');
 const { resolveCompetencyIds } = require('./competencyController');
 
@@ -282,13 +283,38 @@ const enrollCourse = async (req, res) => {
     }
 
     let enrollment = await Enrollment.findOne({ traineeId: req.user._id, courseId });
-    if (enrollment) {
+    if (enrollment && enrollment.status !== 'dropped') {
       return res.status(400).json({ success: false, message: 'Already enrolled in this course' });
+    }
+
+    let enrollmentType = 'INSTITUTE_SPONSORED_FREE';
+
+    // DUAL-TIER PRICING & MEMBERSHIP VALIDATION:
+    if (course.isGovernmentFree) {
+      enrollmentType = 'GOV_SCHOLARSHIP';
+    } else if (req.user.organizationId) {
+      // Institute student: Check college subscription
+      const org = await Organization.findById(req.user.organizationId);
+      if (org && (org.subscription?.status === 'ACTIVE' || org.status === 'APPROVED')) {
+        enrollmentType = 'INSTITUTE_SPONSORED_FREE';
+      }
+    } else if (course.individualPrice > 0 && req.user.role !== 'platform_admin' && req.user.role !== 'admin') {
+      // External / Independent student -> requires payment first
+      return res.status(402).json({
+        success: false,
+        paymentRequired: true,
+        message: `External Independent Certification: Please complete checkout (₹${course.individualPrice}) to unlock full course access & WMO certificate.`,
+        price: course.individualPrice,
+        currency: course.currency || 'INR',
+        courseId: course._id
+      });
     }
 
     enrollment = await Enrollment.create({
       traineeId: req.user._id,
       courseId,
+      organizationId: req.user.organizationId || null,
+      enrollmentType,
       status: 'enrolled',
       progressPercentage: 0,
       completedModuleItems: []
@@ -302,10 +328,11 @@ const enrollCourse = async (req, res) => {
       action: 'COURSE_ENROLLED',
       module: 'COURSES',
       targetId: course._id,
-      targetName: course.title
+      targetName: course.title,
+      metadata: { enrollmentType }
     });
 
-    res.status(201).json({ success: true, enrollment });
+    res.status(201).json({ success: true, enrollment, enrollmentType });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -169,7 +169,7 @@ const InstituteCertTemplate = () => {
                       required
                       value={template.signatoryName}
                       onChange={(e) => setTemplate({ ...template, signatoryName: e.target.value })}
-                      placeholder="Dr. R. Krishnan"
+                      placeholder="Enter signatory authority full name"
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition"
                     />
                   </div>
@@ -182,7 +182,7 @@ const InstituteCertTemplate = () => {
                       required
                       value={template.signatoryDesignation}
                       onChange={(e) => setTemplate({ ...template, signatoryDesignation: e.target.value })}
-                      placeholder="Director, IITM"
+                      placeholder="Enter official designation (e.g. Director / Registrar)"
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition"
                     />
                   </div>

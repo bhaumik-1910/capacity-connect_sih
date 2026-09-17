@@ -1,0 +1,198 @@
+# Dual-Tier Payment Gateway Integration Plan: Institutional SaaS & Direct Trainee Purchases
+
+This design document specifies the architecture for CapacityConnect's **Dual-Tier Monetization & Access Model** tailored specifically for the Ministry of Earth Sciences (MoES) & India Meteorological Department (IMD) ecosystem:
+
+1. **B2B Institutional Subscriptions (Campus Capacity License)**:
+   - Universities & Institutes select a student quota plan upon registration (e.g. **1,000 Student Plan**).
+   - Upon payment, all students belonging to that institute receive **100% Free Access** to courses and exams without paying individually.
+2. **B2C Direct / Independent Learner Purchases**:
+   - External, open-public learners not affiliated with an active subscribed college must pay individual course fees (e.g. ₹999 / ₹1,499) to enroll and earn certificates.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Institutional Pricing & Quota Tiers (Proposed Defaults)**:
+> - **Starter Campus**: Up to 250 Students — ₹25,000/year
+> - **Standard College (Recommended / User Case)**: Up to 1,000 Students — ₹75,000/year
+> - **University Enterprise**: Up to 5,000 Students — ₹2,50,000/year
+> - **MoES Autonomous Centre**: Central Government Sponsored — ₹0 (Unlimited)
+>
+> Please confirm if these pricing tiers and student capacity numbers align with your desired fee structure.
+
+> [!NOTE]
+> **Free Access Enforcement Logic**:
+> When an officer trainee attempts to enroll in a course, the server executes this rule:
+> ```javascript
+> if (user.organizationId && user.organization.subscriptionStatus === 'ACTIVE') {
+>   // 100% FREE for Institute Students!
+>   return enrollDirectlyWithoutPayment();
+> } else {
+>   // External / Independent student -> Launch Individual Payment Checkout
+>   return requireCoursePayment(course.price);
+> }
+> ```
+
+---
+
+## Architecture & Workflow Blueprint
+
+```mermaid
+flowchart TD
+    subgraph FlowA["1. B2B UNIVERSITY / INSTITUTE WORKFLOW"]
+        OrgReg["🏫 Institute Registration<br/>(/register-institute)"]
+        ChooseTier["📋 Select Student Capacity Tier<br/>(e.g., 1,000 Student Quota)"]
+        OrgPay["💳 Razorpay Campus Checkout<br/>(₹75,000 via NetBanking/Cards/UPI)"]
+        OrgActive["✅ Campus Activated with Quota: 1,000<br/>(subscriptionStatus: 'ACTIVE')"]
+        
+        OrgReg --> ChooseTier --> OrgPay --> OrgActive
+    end
+
+    subgraph FlowB["2. INSTITUTIONAL STUDENT JOURNEY (100% FREE)"]
+        CampusStudent["🎓 Trainee belonging to IITM / LJKU / College"]
+        CheckSub{"🏢 Is College Subscription Active?"}
+        FreeEnroll["🎉 Instant 100% Free Course Enrollment!<br/>(₹0 Charged to Student)"]
+        QuotaTrack["📊 Decrements Institute Student Quota Pool<br/>(e.g., 999 of 1,000 remaining)"]
+        
+        CampusStudent --> CheckSub
+        CheckSub -- YES --> FreeEnroll --> QuotaTrack
+    end
+
+    subgraph FlowC["3. DIRECT / INDIVIDUAL STUDENT JOURNEY (PAID)"]
+        PublicStudent["👤 Open Public Citizen / External Trainee<br/>(No Subscribed College Affiliation)"]
+        CheckSub2{"🏢 Affiliated with Subscribed College?"}
+        PayCheckout["💳 Individual Course Payment Required<br/>(e.g. ₹999 via UPI/QR/GPay)"]
+        UnlockCourse["🔓 Personal Course & Certificate Unlocked"]
+        
+        PublicStudent --> CheckSub2
+        CheckSub2 -- NO --> PayCheckout --> UnlockCourse
+    end
+```
+
+---
+
+## Proposed Changes
+
+### 1. Database Schema Enhancements
+
+#### [MODIFY] [Organization.js](file:///d:/SIH/server/models/Organization.js)
+Add Institutional Subscription & Capacity Quotas:
+```javascript
+subscription: {
+  planTier: { 
+    type: String, 
+    enum: ['STARTER_250', 'STANDARD_1000', 'ENTERPRISE_5000', 'GOV_EXEMPT'], 
+    default: 'STANDARD_1000' 
+  },
+  maxStudentQuota: { type: Number, default: 1000 },
+  activeStudentCount: { type: Number, default: 0 },
+  status: { 
+    type: String, 
+    enum: ['PENDING_PAYMENT', 'ACTIVE', 'EXPIRED', 'SUSPENDED'], 
+    default: 'PENDING_PAYMENT' 
+  },
+  billingAmount: { type: Number, default: 75000 },
+  paymentId: { type: String, default: '' },
+  startDate: { type: Date },
+  expiryDate: { type: Date }
+}
+```
+
+#### [MODIFY] [Course.js](file:///d:/SIH/server/models/Course.js)
+Add pricing metadata for external public learners:
+```javascript
+isGovernmentFree: { type: Boolean, default: false }, // If true, free for all citizens
+individualPrice: { type: Number, default: 999 },      // Fee for non-institute external learners
+currency: { type: String, default: 'INR' }
+```
+
+#### [NEW] [PaymentTransaction.js](file:///d:/SIH/server/models/PaymentTransaction.js)
+Unified ledger tracking both Institutional Subscriptions and Individual Trainee purchases:
+- `transactionType`: `INSTITUTE_SUBSCRIPTION` vs `INDIVIDUAL_COURSE_ENROLLMENT`
+- `orderId`: String (Razorpay Order ID `order_...`)
+- `paymentId`: String (Razorpay Payment ID `pay_...`)
+- `signature`: String (HMAC SHA-256 signature)
+- `organizationId`: ObjectId (ref: `Organization`, populated for college payments)
+- `userId`: ObjectId (ref: `User`, paying admin or student)
+- `courseId`: ObjectId (ref: `Course`, populated for individual course enrollment)
+- `amount`: Number (in INR)
+- `status`: `captured`, `failed`, `refunded`
+- `timestamps`: true
+
+#### [MODIFY] [Enrollment.js](file:///d:/SIH/server/models/Enrollment.js)
+Track enrollment coverage source:
+```javascript
+enrollmentType: { 
+  type: String, 
+  enum: ['INSTITUTE_SPONSORED_FREE', 'INDIVIDUAL_PAID', 'GOV_SCHOLARSHIP'], 
+  default: 'INSTITUTE_SPONSORED_FREE' 
+},
+paymentTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'PaymentTransaction' }
+```
+
+---
+
+### 2. Backend Controllers & Logic
+
+#### [NEW] [paymentController.js](file:///d:/SIH/server/controllers/paymentController.js)
+
+1. **`createInstituteSubscriptionOrder`**:
+   - Called by Institute Admin during or after registration.
+   - Calculates fee based on chosen tier (e.g. 1,000 students = ₹75,000).
+   - Generates Razorpay order with metadata `{ type: 'INSTITUTE_SUBSCRIPTION', orgId, quota: 1000 }`.
+
+2. **`createIndividualCourseOrder`**:
+   - Called by independent trainee on `/api/v1/payments/create-course-order`.
+   - First verifies: Does student belong to a college with `subscription.status === 'ACTIVE'`?
+     - If **YES** $\to$ Blocks payment request and returns `{ isFree: true, message: 'Your institute subscription covers this course for free!' }`.
+     - If **NO** $\to$ Creates Razorpay order for `course.individualPrice`.
+
+3. **`verifyPayment` (HMAC SHA-256)**:
+   - Validates cryptographic signature:
+     $$\text{expected} = \text{crypto.createHmac}('sha256', \text{KEY\_SECRET}).\text{update}(\text{orderId} + '|' + \text{paymentId}).\text{digest}('hex')$$
+   - If Institutional Subscription:
+     - Updates `Organization.subscription.status = 'ACTIVE'`
+     - Sets `Organization.subscription.maxStudentQuota = order.quota` (e.g. 1000)
+     - Sets `expiryDate = now + 365 days`
+   - If Individual Course Purchase:
+     - Creates active `Enrollment` with `status: 'enrolled'`, `enrollmentType: 'INDIVIDUAL_PAID'`.
+
+4. **Quota Guard in [studentOnboardingController.js](file:///d:/SIH/server/controllers/studentOnboardingController.js)**:
+   - When Institute Admin uploads an Excel roster of students:
+     - Verifies: `activeStudentCount + incomingStudents <= maxStudentQuota`.
+     - Rejects upload with clear alert if batch exceeds remaining quota (e.g. "Quota exceeded: 1,000 student limit reached. Please upgrade your campus plan.").
+
+---
+
+### 3. Frontend UI Components
+
+#### [NEW] [InstitutePlanSelector.jsx](file:///d:/SIH/client/src/components/InstitutePlanSelector.jsx)
+- Rendered on `/register-institute` and Institute Admin Dashboard.
+- Clean pricing cards:
+  - **Starter (250 Students)** — ₹25,000
+  - **Standard (1,000 Students) [Popular]** — ₹75,000
+  - **Enterprise (5,000 Students)** — ₹2,50,000
+- 1-Click "Proceed to Campus Activation Payment" button opening Razorpay.
+
+#### [MODIFY] [CourseCatalogue.jsx](file:///d:/SIH/client/src/pages/trainee/CourseCatalogue.jsx)
+- Dynamically checks student profile:
+  - If student belongs to subscribed college: Badged **"Included in College Membership (FREE)"** $\to$ Direct 1-click enroll.
+  - If student is external independent: Badged **"₹999 (Public Certification)"** $\to$ Opens Checkout Modal.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+1. **Institute Quota Purchase Test**: Simulates ₹75,000 subscription payment $\to$ verifies institute `maxStudentQuota` is updated to 1,000 and status is `ACTIVE`.
+2. **Institute Student Free Enrollment Test**: Student belonging to subscribed institute calls enroll API $\to$ verifies enrollment succeeds with **₹0 fee charged**.
+3. **External Student Paywall Test**: Student with no college affiliation calls enroll API on paid course $\to$ verifies server requires Razorpay payment.
+4. **Quota Overflow Protection Test**: Attempting to onboard 1,001 students on a 1,000 quota plan returns HTTP 400 with quota alert.
+
+### Manual Verification
+1. Register a new test Institute choosing the **1,000 Student Plan**.
+2. Complete test Razorpay payment.
+3. Batch upload 50 test students via Excel.
+4. Log in as one of those students $\to$ Verify all courses are immediately unlocked for **FREE**.
+5. Log in as an external citizen student $\to$ Verify course requires Razorpay payment.

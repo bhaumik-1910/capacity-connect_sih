@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../services/api';
+import { useToast } from '../../context/NotificationContext';
 import {
   Building2,
   Shield,
@@ -19,11 +20,17 @@ import {
   ChevronRight,
   Radio,
   Sparkles,
-  Landmark
+  Landmark,
+  Users,
+  ShieldCheck
 } from 'lucide-react';
 
 const InstituteRegister = () => {
   const navigate = useNavigate();
+  const toast = useToast();
+  const [searchParams] = useSearchParams();
+  const initialPlan = searchParams.get('plan') || 'STANDARD_1000';
+  const [selectedPlan, setSelectedPlan] = useState(initialPlan);
   const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -50,28 +57,36 @@ const InstituteRegister = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.agreeTerms) {
-      setError('You must accept the Government of India NDEAR & MoES compliance guidelines.');
+      const warnMsg = 'You must accept the Government of India NDEAR & MoES compliance guidelines.';
+      setError(warnMsg);
+      toast.warning(warnMsg, 'Compliance Required');
       return;
     }
 
     setError('');
     setLoading(true);
     try {
-      const res = await api.registerOrganization(formData);
+      const res = await api.registerOrganization({
+        ...formData,
+        subscriptionPlan: selectedPlan
+      });
       if (res.success) {
         setSuccess(true);
+        toast.success('Institute registration application submitted successfully! It will be verified by the MoES Central Authority.', 'Application Submitted');
       }
     } catch (err) {
-      setError(err.message || 'Institute registration failed');
+      const errText = err.message || 'Institute registration failed';
+      setError(errText);
+      toast.error(errText, 'Registration Error');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-2 sm:p-3 lg:p-4 select-none bg-gradient-to-b from-slate-100 via-[#F8FAFC] to-slate-100 overflow-hidden">
+    <div className="w-full min-h-full flex flex-col items-center justify-center p-3 sm:p-5 lg:p-6 select-none bg-gradient-to-b from-slate-100 via-[#F8FAFC] to-slate-100">
       
-      <div className="max-w-3xl w-full my-auto">
+      <div className="max-w-3xl w-full my-auto py-4">
         
         {success ? (
           <div className="bg-white rounded-2xl border-2 border-emerald-500 p-6 sm:p-8 text-center space-y-3.5 shadow-xl animate-in zoom-in-95">
@@ -145,6 +160,56 @@ const InstituteRegister = () => {
               </div>
             </div>
 
+            {/* Subscription Quota Tier Selection */}
+            <div className="p-3 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 border border-blue-200 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                  Select Institutional Capacity & Student Quota Tier
+                </span>
+                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-2 py-0.5 rounded">
+                  Campus Trainees: 100% Free
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { id: 'STARTER_250', name: 'Starter Campus', quota: '250 Trainees', fee: '₹25,000/yr' },
+                  { id: 'STANDARD_1000', name: 'Standard College', quota: '1,000 Trainees', fee: '₹75,000/yr', popular: true },
+                  { id: 'ENTERPRISE_5000', name: 'Enterprise Univ', quota: '5,000 Trainees', fee: '₹2,50,000/yr' }
+                ].map((plan) => {
+                  const isSelected = selectedPlan === plan.id;
+                  return (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => setSelectedPlan(plan.id)}
+                      className={`p-2 rounded-xl text-left border transition relative cursor-pointer ${
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-700 shadow-md ring-2 ring-blue-400/40'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
+                      }`}
+                    >
+                      {plan.popular && (
+                        <span className={`absolute -top-2 right-2 text-[8px] font-black uppercase px-1.5 py-0.2 rounded-full ${
+                          isSelected ? 'bg-amber-400 text-slate-950' : 'bg-blue-600 text-white'
+                        }`}>
+                          Most Popular
+                        </span>
+                      )}
+                      <div className="font-extrabold text-[11px] leading-tight">{plan.name}</div>
+                      <div className={`text-[10px] font-bold ${isSelected ? 'text-blue-100' : 'text-blue-600'}`}>
+                        {plan.fee}
+                      </div>
+                      <div className={`text-[9px] ${isSelected ? 'text-blue-200' : 'text-slate-400'}`}>
+                        {plan.quota} included
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {error && (
               <div className="p-2 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 flex items-start space-x-1.5 text-[11px]">
                 <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
@@ -159,7 +224,7 @@ const InstituteRegister = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Indian Institute of Tropical Meteorology"
+                  placeholder="Enter your institute's legal name"
                   value={formData.legalName}
                   onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
                   className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"
@@ -171,7 +236,7 @@ const InstituteRegister = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g., IITM Pune"
+                  placeholder="Enter display acronym (e.g. IITM)"
                   value={formData.displayName}
                   onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                   className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"
@@ -186,7 +251,7 @@ const InstituteRegister = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g., IITM-PUNE-01"
+                  placeholder="Enter institute code (e.g. IITM-01)"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                   className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] font-mono uppercase text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"
@@ -213,7 +278,7 @@ const InstituteRegister = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g., tropmet.res.in"
+                  placeholder="Enter campus domain (e.g. college.edu.in)"
                   value={formData.domain}
                   onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
                   className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] font-mono text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"
@@ -227,7 +292,7 @@ const InstituteRegister = () => {
               <input
                 type="text"
                 required
-                placeholder="Official physical campus location and city"
+                placeholder="Enter campus physical address and city"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"
@@ -246,7 +311,7 @@ const InstituteRegister = () => {
                   <input
                     type="text"
                     required
-                    placeholder="Enter authorized signatory name"
+                    placeholder="Enter authorized signatory full name"
                     value={formData.signatoryName}
                     onChange={(e) => setFormData({ ...formData, signatoryName: e.target.value })}
                     className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] transition"
@@ -257,7 +322,7 @@ const InstituteRegister = () => {
                   <input
                     type="text"
                     required
-                    placeholder="e.g., Director & Senior Scientist"
+                    placeholder="Enter signatory official designation"
                     value={formData.signatoryDesignation}
                     onChange={(e) => setFormData({ ...formData, signatoryDesignation: e.target.value })}
                     className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] transition"
@@ -278,7 +343,7 @@ const InstituteRegister = () => {
                   <input
                     type="text"
                     required
-                    placeholder="Dr. Sanjay Jha"
+                    placeholder="Enter your full name"
                     value={formData.adminName}
                     onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
                     className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] transition"
@@ -289,7 +354,7 @@ const InstituteRegister = () => {
                   <input
                     type="email"
                     required
-                    placeholder="admin@tropmet.res.in"
+                    placeholder="Enter your official email address"
                     value={formData.adminEmail}
                     onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
                     className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] transition"
@@ -299,7 +364,7 @@ const InstituteRegister = () => {
                   <label className="font-bold text-slate-700 text-[10px]">Mobile Contact</label>
                   <input
                     type="tel"
-                    placeholder="+91-9876543210"
+                    placeholder="Enter your 10-digit mobile number"
                     value={formData.adminMobile}
                     onChange={(e) => setFormData({ ...formData, adminMobile: e.target.value })}
                     className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] transition"
@@ -311,7 +376,7 @@ const InstituteRegister = () => {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       required
-                      placeholder="••••••••"
+                      placeholder="Enter your password"
                       value={formData.adminPassword}
                       onChange={(e) => setFormData({ ...formData, adminPassword: e.target.value })}
                       className="w-full px-2 py-1 pr-7 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] transition"

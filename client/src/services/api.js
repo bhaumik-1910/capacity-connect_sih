@@ -20,7 +20,19 @@ export const apiFetch = async (endpoint, options = {}) => {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message || 'An error occurred during request execution');
+    const error = new Error(data.message || 'An error occurred during request execution');
+    error.status = response.status;
+    error.response = { status: response.status, data };
+    error.data = data;
+    error.paymentRequired = data.paymentRequired || response.status === 402;
+    throw error;
+  }
+
+  // Ensure both direct access (res.success) and axios-like access (res.data.success) work
+  if (data && typeof data === 'object') {
+    if (!('data' in data)) {
+      data.data = data;
+    }
   }
   return data;
 };
@@ -130,5 +142,12 @@ export const api = {
   createSingleStudent: (data) => apiFetch('/students/single', { method: 'POST', body: JSON.stringify(data) }),
   getStudents: () => apiFetch('/students'),
   getStudentExamSubmissions: (params = '') => apiFetch(`/students/exam-submissions${params ? `?${params}` : ''}`),
-  deleteStudent: (id) => apiFetch(`/students/${id}`, { method: 'DELETE' }),
+  // Generic HTTP helpers
+  get: (url) => apiFetch(url),
+  post: (url, data) => apiFetch(url, { method: 'POST', body: data ? JSON.stringify(data) : undefined }),
+  put: (url, data) => apiFetch(url, { method: 'PUT', body: data ? JSON.stringify(data) : undefined }),
+  delete: (url) => apiFetch(url, { method: 'DELETE' }),
 };
+
+export default api;
+

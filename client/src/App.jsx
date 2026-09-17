@@ -123,12 +123,13 @@ function App() {
 
         <main
           id="main-content"
-          className={`flex-1 h-full ${['/login', '/register', '/register-institute'].includes(location.pathname) ? 'overflow-y-auto lg:overflow-hidden' : 'overflow-y-auto'} w-full ${['/', '/about', '/login', '/register', '/register-institute'].includes(location.pathname) ? 'p-0' : 'p-3.5 sm:p-6 lg:p-8'}`}
+          className={`flex-1 h-full overflow-y-auto w-full ${['/', '/about', '/pricing', '/login', '/register', '/register-institute'].includes(location.pathname) ? 'p-0' : 'p-3.5 sm:p-6 lg:p-8'}`}
         >
-          <div className={['/login', '/register', '/register-institute'].includes(location.pathname) ? 'w-full h-full flex flex-col overflow-hidden' : ['/', '/about'].includes(location.pathname) ? 'w-full min-h-full flex flex-col' : 'max-w-7xl mx-auto pb-12'}>
+          <div className={['/login', '/register', '/register-institute', '/', '/about', '/pricing'].includes(location.pathname) ? 'w-full min-h-full flex flex-col' : 'max-w-7xl mx-auto pb-12'}>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/pricing" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/register-institute" element={<InstituteRegister />} />

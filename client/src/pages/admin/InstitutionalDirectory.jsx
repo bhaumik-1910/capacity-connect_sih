@@ -665,7 +665,7 @@ const InstitutionalDirectory = ({ initialTab = 'institutes' }) => {
                                 type="text"
                                 value={certTemplate.signatoryName || ''}
                                 onChange={(e) => setCertTemplate({ ...certTemplate, signatoryName: e.target.value })}
-                                placeholder="Dr. M. Mohapatra"
+                                placeholder="Enter authorized signatory full name"
                                 className="w-full p-2 border border-amber-300 rounded-lg bg-white text-xs"
                               />
                             </div>
@@ -675,7 +675,7 @@ const InstitutionalDirectory = ({ initialTab = 'institutes' }) => {
                                 type="text"
                                 value={certTemplate.signatoryDesignation || ''}
                                 onChange={(e) => setCertTemplate({ ...certTemplate, signatoryDesignation: e.target.value })}
-                                placeholder="Director General"
+                                placeholder="Enter signatory designation"
                                 className="w-full p-2 border border-amber-300 rounded-lg bg-white text-xs"
                               />
                             </div>

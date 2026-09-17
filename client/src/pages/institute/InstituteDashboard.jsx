@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/NotificationContext';
 import InstituteHeader from '../../components/InstituteHeader';
+import InstitutePlanSelector from '../../components/InstitutePlanSelector';
 import {
   Building2,
   Users,
@@ -23,7 +24,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Percent,
-  ChevronRight
+  ChevronRight,
+  CreditCard
 } from 'lucide-react';
 
 const InstituteDashboard = () => {
@@ -31,6 +33,7 @@ const InstituteDashboard = () => {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'subscription'
 
   const loadMetrics = async () => {
     setLoading(true);
@@ -117,6 +120,40 @@ const InstituteDashboard = () => {
         </div>
       </div>
 
+      {/* Workspace Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeTab === 'overview'
+              ? 'bg-[#064e3b] text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          <span>Campus Performance & Overview</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('subscription')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            activeTab === 'subscription'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <CreditCard className="w-4 h-4" />
+          <span>Student Quota & Membership Plans (1,000 Seats)</span>
+          <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-400 text-slate-950 font-black">
+            B2B SaaS
+          </span>
+        </button>
+      </div>
+
+      {activeTab === 'subscription' ? (
+        <InstitutePlanSelector onActivated={loadMetrics} />
+      ) : (
+        <>
       {/* 2. Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
@@ -309,6 +346,8 @@ const InstituteDashboard = () => {
           </Link>
         </div>
       </div>
+      </>
+      )}
 
     </div>
   );

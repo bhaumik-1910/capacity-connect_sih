@@ -33,7 +33,9 @@ import {
   Landmark,
   ShieldCheck,
   CheckCircle2,
-  HelpCircle
+  HelpCircle,
+  CreditCard,
+  ChevronDown
 } from 'lucide-react';
 
 const ROLE_TABS = [
@@ -123,6 +125,17 @@ const LandingPage = () => {
   const [activeRoleTab, setActiveRoleTab] = useState('trainee');
   const [heroSearchQuery, setHeroSearchQuery] = useState('');
   const [certVerifyInput, setCertVerifyInput] = useState('');
+  const [pricingTab, setPricingTab] = useState('institute'); // 'institute' | 'individual'
+  const [openFaq, setOpenFaq] = useState(0);
+
+  useEffect(() => {
+    if (window.location.hash === '#pricing' || window.location.pathname === '/pricing') {
+      setTimeout(() => {
+        const el = document.getElementById('pricing');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 200);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchLandingData = async () => {
@@ -626,7 +639,378 @@ const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
-      {/* 7. OFFICIAL AUTONOMOUS RESEARCH INSTITUTES DIRECTORY */}
+      {/* 7. NATIONAL CAPACITY BUILDING & MEMBERSHIP PRICING PLANS */}
+      {/* ========================================================================= */}
+      <section id="pricing" className="max-w-6xl mx-auto px-4 space-y-8 scroll-mt-24">
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            Transparent National Capacity Pricing
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            Institutional Subscriptions & Trainee Access Plans
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Choose an institutional capacity tier for university campus-wide access, or explore individual professional course certifications.
+          </p>
+
+          {/* Pricing Model Switcher */}
+          <div className="inline-flex p-1.5 bg-slate-100 rounded-2xl border border-slate-200 gap-2 mt-4 shadow-inner">
+            <button
+              onClick={() => setPricingTab('institute')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                pricingTab === 'institute'
+                  ? 'bg-[#0B2545] text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              <span>University / Institute Plans (1,000+ Quota)</span>
+            </button>
+            <button
+              onClick={() => setPricingTab('individual')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                pricingTab === 'individual'
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>Individual External Trainees</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Campus Guarantee Banner */}
+        {pricingTab === 'institute' && (
+          <div className="p-5 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200 rounded-2xl text-xs flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="font-bold text-emerald-950 text-sm">Campus Student Guarantee: </span>
+                <span className="text-slate-700 block sm:inline">
+                  When an institution activates an Institutional Quota Plan, <strong>all enrolled campus students receive 100% Free Access</strong> to all courses, modules, and exam certifications with <strong>₹0 fee charged to the student</strong>.
+                </span>
+              </div>
+            </div>
+            <Link
+              to="/register-institute?plan=STANDARD_1000"
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0"
+            >
+              <span>Onboard Your College</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
+
+        {/* Dynamic Pricing Cards Grid */}
+        {pricingTab === 'institute' ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            {/* Plan 1: Starter */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col justify-between hover:shadow-xl hover:border-blue-300 transition-all">
+              <div className="space-y-4">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Small Academy</div>
+                <h3 className="text-xl font-bold text-slate-900">Starter Campus</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black text-slate-900">₹25,000</span>
+                  <span className="text-xs text-slate-500 font-medium">/ year</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-blue-800 text-xs font-bold">
+                  <Users className="w-3.5 h-3.5" />
+                  Capacity: Up to 250 Trainees Included
+                </div>
+                <div className="space-y-2.5 pt-4 border-t border-slate-100 text-xs text-slate-600">
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>All courses 100% Free for 250 campus trainees</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Excel Bulk Student Ingestion & auto PINs</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Printable Live QR Exam Hall Tickets</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Standard Institute KPIs & Gradebook</span></div>
+                </div>
+              </div>
+              <Link
+                to="/register-institute?plan=STARTER_250"
+                className="mt-8 w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs text-center block transition"
+              >
+                Choose Starter Plan
+              </Link>
+            </div>
+
+            {/* Plan 2: Standard (1,000 Students) - Featured */}
+            <div className="bg-gradient-to-b from-blue-50/50 to-white rounded-3xl border-2 border-blue-600 p-6 flex flex-col justify-between shadow-xl relative scale-100 md:-translate-y-2">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 bg-blue-600 text-white rounded-full text-[11px] font-black uppercase tracking-wider shadow-md flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                Most Popular • Standard Plan
+              </div>
+              <div className="space-y-4 pt-2">
+                <div className="text-xs font-bold text-blue-600 uppercase tracking-wider">Affiliated College / Institute</div>
+                <h3 className="text-2xl font-black text-slate-900">Standard College</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-slate-900">₹75,000</span>
+                  <span className="text-xs text-slate-500 font-medium">/ year (₹75/student)</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-100 text-blue-900 text-xs font-black">
+                  <Users className="w-3.5 h-3.5 text-blue-700" />
+                  Capacity: Up to 1,000 Trainees Included
+                </div>
+                <div className="space-y-2.5 pt-4 border-t border-slate-200/80 text-xs text-slate-700">
+                  <div className="flex items-center gap-2 font-medium"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>All courses 100% Free for all 1,000 students</span></div>
+                  <div className="flex items-center gap-2 font-medium"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Custom Institute Certificate Template & Seal</span></div>
+                  <div className="flex items-center gap-2 font-medium"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Faculty Course & Examination Authoring Studio</span></div>
+                  <div className="flex items-center gap-2 font-medium"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Departments, Programs & Batch Cohort Management</span></div>
+                  <div className="flex items-center gap-2 font-medium"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>WMO-258 National Standards Verification</span></div>
+                </div>
+              </div>
+              <Link
+                to="/register-institute?plan=STANDARD_1000"
+                className="mt-8 w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs text-center block shadow-lg shadow-blue-500/30 transition"
+              >
+                Activate 1,000 Student Plan (₹75,000)
+              </Link>
+            </div>
+
+            {/* Plan 3: Enterprise */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col justify-between hover:shadow-xl hover:border-indigo-300 transition-all">
+              <div className="space-y-4">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">State / Central University</div>
+                <h3 className="text-xl font-bold text-slate-900">Enterprise University</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-black text-slate-900">₹2,50,000</span>
+                  <span className="text-xs text-slate-500 font-medium">/ year (₹50/student)</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-50 text-indigo-800 text-xs font-bold">
+                  <Users className="w-3.5 h-3.5" />
+                  Capacity: Up to 5,000 Trainees Included
+                </div>
+                <div className="space-y-2.5 pt-4 border-t border-slate-100 text-xs text-slate-600">
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0" /><span>All courses 100% Free for 5,000 campus trainees</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0" /><span>Multi-Campus Decentralized Administration</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0" /><span>Priority MoES National Accreditation Clearance</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-indigo-600 flex-shrink-0" /><span>Dedicated 24/7 Academic Support Line</span></div>
+                </div>
+              </div>
+              <Link
+                to="/register-institute?plan=ENTERPRISE_5000"
+                className="mt-8 w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs text-center block transition"
+              >
+                Choose Enterprise Plan
+              </Link>
+            </div>
+          </div>
+        ) : (
+          /* Individual External Trainees Pay-As-You-Go */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* Free Open Citizen Preview */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 space-y-6 flex flex-col justify-between hover:shadow-lg transition">
+              <div className="space-y-4">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Public Access</span>
+                <h3 className="text-2xl font-bold text-slate-900">Open Public Citizen Preview</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-slate-900">₹0</span>
+                  <span className="text-xs text-slate-500 font-medium">Free Forever</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Explore open meteorological syllabus overviews, public weather warnings, and radar terminology.
+                </p>
+                <div className="space-y-3 pt-4 border-t border-slate-100 text-xs text-slate-600">
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /><span>Browse National Course Catalogue</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /><span>Preview introductory lecture materials</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" /><span>Access public circulars and weather radar map</span></div>
+                </div>
+              </div>
+              <Link
+                to="/trainee/catalogue"
+                className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs text-center block transition"
+              >
+                Browse Free Catalogue
+              </Link>
+            </div>
+
+            {/* Paid Individual Certification */}
+            <div className="bg-gradient-to-b from-blue-50/50 to-white rounded-3xl border-2 border-blue-600 p-8 space-y-6 flex flex-col justify-between shadow-xl relative">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-600 text-white rounded-full text-[11px] font-black uppercase tracking-wider shadow-md flex items-center gap-1.5">
+                <Award className="w-3.5 h-3.5" />
+                Certified Career Progression
+              </div>
+              <div className="space-y-4 pt-2">
+                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Direct External Learner</span>
+                <h3 className="text-2xl font-black text-slate-900">Verified MoES-IMD Certification</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-blue-600">₹999</span>
+                  <span className="text-xs text-slate-500 font-medium">/ course (one-time fee)</span>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  For external independent researchers and non-affiliated students wanting accredited career certification.
+                </p>
+                <div className="space-y-3 pt-4 border-t border-slate-200/80 text-xs text-slate-700 font-medium">
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Full access to all course lectures & modules</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Official proctored timed examination</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Cryptographic SHA-256 Verifiable Certificate with Live QR</span></div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>National Competency Passport skill badge</span></div>
+                </div>
+              </div>
+              <Link
+                to="/trainee/catalogue"
+                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs text-center block shadow-lg shadow-blue-500/30 transition"
+              >
+                Enroll in Paid Certification (₹999)
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* DUAL-TIER COMPARISON MATRIX */}
+        {/* ========================================================================= */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="text-center space-y-1">
+            <h3 className="text-lg sm:text-xl font-black text-slate-900">
+              Clear Dual-Tier Access Model Comparison
+            </h3>
+            <p className="text-xs text-slate-500">
+              Transparent policy: Campus students never pay individually; external trainees pay per certificate.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[10px]">
+                  <th className="py-3 px-4 font-bold">Platform Feature</th>
+                  <th className="py-3 px-4 font-bold text-emerald-700 bg-emerald-50/50 rounded-t-xl">Campus Student (Subscribed College)</th>
+                  <th className="py-3 px-4 font-bold text-blue-700 bg-blue-50/50 rounded-t-xl">External Independent Trainee</th>
+                  <th className="py-3 px-4 font-bold text-slate-700">Institutional Admin</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                <tr>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Student Course Fee</td>
+                  <td className="py-3.5 px-4 font-black text-emerald-600 bg-emerald-50/30">100% FREE (₹0 Charged)</td>
+                  <td className="py-3.5 px-4 font-bold text-blue-600 bg-blue-50/30">₹999 / Course</td>
+                  <td className="py-3.5 px-4">Funded via Quota (₹75k/yr)</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Interactive Lecture Access</td>
+                  <td className="py-3.5 px-4 text-emerald-700 bg-emerald-50/30">Unlimited Full Access</td>
+                  <td className="py-3.5 px-4 text-blue-700 bg-blue-50/30">Full Access upon Enrollment</td>
+                  <td className="py-3.5 px-4">Authoring & Preview Access</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Proctored Timed Examination</td>
+                  <td className="py-3.5 px-4 text-emerald-700 bg-emerald-50/30">Included Free</td>
+                  <td className="py-3.5 px-4 text-blue-700 bg-blue-50/30">1 Exam Included</td>
+                  <td className="py-3.5 px-4">Configure Pass Marks & Banks</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Tamper-Proof QR Certificate</td>
+                  <td className="py-3.5 px-4 text-emerald-700 bg-emerald-50/30">Included with Campus Seal</td>
+                  <td className="py-3.5 px-4 text-blue-700 bg-blue-50/30">Included with MoES National Seal</td>
+                  <td className="py-3.5 px-4">Custom Institutional Seal Studio</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Roster Onboarding Method</td>
+                  <td className="py-3.5 px-4 text-emerald-700 bg-emerald-50/30">Auto Ingestion by College Admin</td>
+                  <td className="py-3.5 px-4 text-blue-700 bg-blue-50/30">Self-Registration</td>
+                  <td className="py-3.5 px-4">Excel Batch Upload (Up to 1,000)</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Government Mandatory Courses</td>
+                  <td className="py-3.5 px-4 text-emerald-700 bg-emerald-50/30">100% Free for All</td>
+                  <td className="py-3.5 px-4 text-emerald-700 bg-blue-50/30">100% Free for All</td>
+                  <td className="py-3.5 px-4">Included in Curriculum</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* FREQUENTLY ASKED PRICING QUESTIONS (ACCORDION) */}
+        {/* ========================================================================= */}
+        <div className="bg-slate-50/80 rounded-3xl border border-slate-200/90 p-6 sm:p-8 space-y-4">
+          <div className="text-center space-y-1 pb-2">
+            <span className="text-[11px] font-bold text-blue-700 uppercase tracking-widest">
+              Got Questions?
+            </span>
+            <h3 className="text-xl font-bold text-slate-900">
+              Frequently Asked Pricing & Quota Questions
+            </h3>
+          </div>
+
+          <div className="space-y-3 max-w-3xl mx-auto text-xs">
+            {[
+              {
+                q: 'How does the 1,000-student quota work for an affiliated institute?',
+                a: 'When an institute subscribes to the Standard College Plan (₹75,000/yr), their account is credited with a capacity of 1,000 trainees. The institute administrator can upload students via Excel or CSV. Each onboarded student receives credentials and gets 100% free access to all courses and certifications with zero extra charges.'
+              },
+              {
+                q: 'Do college students ever need to pay individually for any course?',
+                a: 'No! If a student is affiliated with an active subscribed institute, their training is 100% sponsored by the university. They are never prompted with payment walls or fees for any accredited curriculum.'
+              },
+              {
+                q: 'What happens if our college exceeds its 1,000 student quota?',
+                a: 'The system protects your capacity. If an Excel import batch exceeds the remaining quota, the system will notify the administrator with the exact count remaining. The institute admin can upgrade to the Enterprise University Plan (5,000 students) directly from their portal.'
+              },
+              {
+                q: 'Can external independent trainees enroll without a college affiliation?',
+                a: 'Yes. Independent scientists, researchers, and working professionals can register as Trainees and enroll in any course. For paid courses, a nominal one-time fee of ₹999 unlocks full access, exam retakes, and an official SHA-256 verifiable certificate.'
+              },
+              {
+                q: 'Are Ministry of Earth Sciences mandatory courses free for everyone?',
+                a: 'Yes! Core national awareness courses marked with the "Ministry Mandatory" badge are 100% free (₹0) for all registered citizens, whether affiliated with an institute or not.'
+              },
+              {
+                q: 'What payment methods are supported on the platform?',
+                a: 'We support all major Indian payment methods through Razorpay, including UPI (Google Pay, PhonePe, Paytm), Net Banking across 50+ Indian banks, Debit and Credit Cards (Visa, Mastercard, RuPay), and corporate institutional invoices.'
+              }
+            ].map((faq, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div
+                  key={idx}
+                  className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs transition"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    className="w-full p-4 text-left flex items-center justify-between gap-3 font-bold text-slate-800 hover:text-blue-700 transition cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <HelpCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      <span>{faq.q}</span>
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-blue-600' : ''}`} />
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-4 pt-1 text-slate-600 leading-relaxed border-t border-slate-50 animate-in fade-in">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Trust Strip */}
+          <div className="pt-6 border-t border-slate-200/80 flex flex-wrap items-center justify-center gap-6 text-[11px] text-slate-500 font-medium">
+            <div className="flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-emerald-600" />
+              <span>256-Bit SSL Encrypted</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+              <span>Razorpay Instant Settlement & GST Invoicing</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+              <span>NDEAR & MoES Accredited Security Standard</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 8. OFFICIAL AUTONOMOUS RESEARCH INSTITUTES DIRECTORY */}
       {/* ========================================================================= */}
       <section className="max-w-6xl mx-auto px-4 space-y-4 text-center">
         <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">

@@ -22,7 +22,8 @@ import {
   UserCheck,
   GraduationCap,
   Users,
-  Loader2
+  Loader2,
+  CreditCard
 } from 'lucide-react';
 
 const Header = ({ onToggleSidebar, isSidebarOpen }) => {
@@ -198,6 +199,18 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
           >
             <Search className="w-3.5 h-3.5 text-emerald-600" />
             <span>Verify Certificate</span>
+          </Link>
+
+          <Link
+            to="/pricing"
+            className={`px-3.5 py-2 rounded-xl transition-all duration-150 flex items-center space-x-1.5 ${
+              isActive('/pricing')
+                ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200 shadow-xs'
+                : 'text-slate-600 hover:text-[#0B2545] hover:bg-slate-50'
+            }`}
+          >
+            <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+            <span>Plans & Pricing</span>
           </Link>
 
           <Link
@@ -519,6 +532,14 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
             className="block py-2.5 px-3 rounded-xl text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
           >
             Verify Certificate (QR)
+          </Link>
+          <Link
+            to="/pricing"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2.5 px-3 rounded-xl text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 flex items-center space-x-2"
+          >
+            <CreditCard className="w-4 h-4 text-blue-600" />
+            <span>Plans & Pricing</span>
           </Link>
           <Link
             to="/about"

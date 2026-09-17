@@ -69,6 +69,28 @@ const organizationSchema = new mongoose.Schema({
     templateVersion: { type: Number, default: 1 }
   },
 
+  // Institutional Subscription & Student Quota
+  subscription: {
+    planTier: { 
+      type: String, 
+      enum: ['STARTER_250', 'STANDARD_1000', 'ENTERPRISE_5000', 'GOV_EXEMPT', 'CUSTOM'], 
+      default: 'STANDARD_1000' 
+    },
+    maxStudentQuota: { type: Number, default: 1000 },
+    activeStudentCount: { type: Number, default: 0 },
+    status: { 
+      type: String, 
+      enum: ['PENDING_PAYMENT', 'ACTIVE', 'EXPIRED', 'SUSPENDED'], 
+      default: 'ACTIVE' 
+    },
+    billingAmount: { type: Number, default: 75000 },
+    currency: { type: String, default: 'INR' },
+    paymentId: { type: String, default: '' },
+    orderId: { type: String, default: '' },
+    startDate: { type: Date, default: Date.now },
+    expiryDate: { type: Date, default: () => new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) }
+  },
+
   status: { 
     type: String, 
     enum: [

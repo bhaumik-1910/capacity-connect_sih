@@ -7,32 +7,29 @@ import {
   Mail,
   Lock,
   Building,
-  Briefcase,
   ArrowRight,
   Eye,
   EyeOff,
   GraduationCap,
   CheckCircle2,
   AlertCircle,
-  BookOpen
+  BookOpen,
+  Phone
 } from 'lucide-react';
-import { useToast, useDialog } from '../../context/NotificationContext';
+import { useToast } from '../../context/NotificationContext';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const toast = useToast();
-  const { showAlert } = useDialog();
   const [showPassword, setShowPassword] = useState(false);
-  const [learnerType, setLearnerType] = useState('independent'); // 'independent' | 'institute'
   
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'trainee', // Fixed strictly to trainee as requested
+    role: 'trainee', // Fixed strictly to trainee
     organizationName: '',
     department: '',
-    designation: '',
     mobile: ''
   });
   
@@ -44,19 +41,15 @@ const RegisterPage = () => {
     setError('');
     setLoading(true);
     try {
-      const finalOrg = learnerType === 'independent' 
-        ? (formData.organizationName.trim() || 'Independent Public Learner')
-        : (formData.organizationName.trim() || 'Affiliated Training Institute');
-
-      const finalDept = formData.department.trim() || (learnerType === 'independent' ? 'General Capacity Building' : 'Meteorology');
-      const finalDesig = formData.designation.trim() || (learnerType === 'independent' ? 'Direct Enrolled Learner' : 'Student Trainee');
-
       const res = await api.register({
-        ...formData,
-        organizationName: finalOrg,
-        department: finalDept,
-        designation: finalDesig,
-        role: 'trainee' // Always locked to trainee for immediate approval
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        organizationName: formData.organizationName.trim() || 'Independent Trainee',
+        department: formData.department.trim() || 'Atmospheric Sciences',
+        designation: 'Student / Officer Trainee',
+        mobile: formData.mobile.trim(),
+        role: 'trainee'
       });
       if (res.success) {
         toast.success('Registration successful! You now have direct access to official Government Courses.', 'Welcome to MoES Portal');
@@ -71,9 +64,9 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center p-2 sm:p-3 lg:p-4 select-none bg-gradient-to-b from-slate-100 via-[#F8FAFC] to-slate-100 overflow-hidden">
+    <div className="w-full min-h-full flex items-center justify-center p-3 sm:p-4 lg:p-6 select-none bg-gradient-to-b from-slate-100 via-[#F8FAFC] to-slate-100">
       
-      <div className="max-w-xl w-full my-auto">
+      <div className="max-w-xl w-full my-auto py-4">
         
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-md space-y-2.5 text-xs">
           
@@ -135,55 +128,7 @@ const RegisterPage = () => {
                 <span className="text-[10px] text-slate-500 block">Direct self-enrollment in all published MoES & IMD curricula</span>
               </div>
             </div>
-            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200 hidden sm:inline">
-              Instant Access
-            </span>
           </div>
-
-          {/* Learner Category Toggle: Independent vs Institute */}
-          <div className="space-y-1">
-            <label className="font-bold text-slate-700 text-[10px] block">Candidate Affiliation Category *</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setLearnerType('independent')}
-                className={`p-2 rounded-xl border text-left transition flex items-start space-x-2 cursor-pointer ${
-                  learnerType === 'independent'
-                    ? 'bg-sky-50 border-sky-500 text-sky-950 ring-1 ring-sky-400 shadow-2xs'
-                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <span className="text-sm mt-0.5">🌐</span>
-                <div>
-                  <div className="font-bold text-[11px] leading-tight">Independent / General Learner</div>
-                  <div className="text-[9px] text-slate-500 mt-0.5">No institute required • Instant self-enrollment</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setLearnerType('institute')}
-                className={`p-2 rounded-xl border text-left transition flex items-start space-x-2 cursor-pointer ${
-                  learnerType === 'institute'
-                    ? 'bg-blue-50 border-blue-500 text-blue-950 ring-1 ring-blue-400 shadow-2xs'
-                    : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <span className="text-sm mt-0.5">🏛️</span>
-                <div>
-                  <div className="font-bold text-[11px] leading-tight">Institute / Academy Student</div>
-                  <div className="text-[9px] text-slate-500 mt-0.5">University, College, or IMD RMC Trainee</div>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {learnerType === 'independent' && (
-            <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] text-emerald-800 flex items-center space-x-1.5">
-              <span className="font-bold text-emerald-700">✓ Public Access Mode:</span>
-              <span>You can register freely and start enrolling in official Government & MoES courses immediately!</span>
-            </div>
-          )}
 
           {/* Row 1: Full Name & Official Email */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -218,54 +163,55 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          {/* Row 2: Department & Designation */}
+          {/* Row 2: College / University & Department */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="space-y-0.5">
               <label className="font-bold text-slate-700 text-[10px]">
-                {learnerType === 'independent' ? 'Area of Interest / Specialization' : 'Department / Scientific Division'}
+                College / University / Organization (Optional)
               </label>
               <div className="relative">
                 <Building className="w-3 h-3 text-slate-400 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
-                  placeholder={learnerType === 'independent' ? 'Enter area of interest' : 'Enter scientific department / division'}
+                  placeholder="Enter your college, university, or organization name"
+                  value={formData.organizationName}
+                  onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                  className="w-full pl-7 pr-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-0.5">
+              <label className="font-bold text-slate-700 text-[10px]">
+                Department / Stream (Optional)
+              </label>
+              <div className="relative">
+                <BookOpen className="w-3 h-3 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Enter your department or field of study"
                   value={formData.department}
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   className="w-full pl-7 pr-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"
                 />
               </div>
             </div>
+          </div>
 
+          {/* Row 3: Mobile Phone & Password */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="space-y-0.5">
-              <label className="font-bold text-slate-700 text-[10px]">
-                {learnerType === 'independent' ? 'Occupation / Background' : 'Designation / Rank'}
-              </label>
+              <label className="font-bold text-slate-700 text-[10px]">Mobile Phone (Optional)</label>
               <div className="relative">
-                <Briefcase className="w-3 h-3 text-slate-400 absolute left-2.5 top-2.5" />
+                <Phone className="w-3 h-3 text-slate-400 absolute left-2.5 top-2.5" />
                 <input
-                  type="text"
-                  placeholder={learnerType === 'independent' ? 'Enter occupation / background' : 'Enter official designation'}
-                  value={formData.designation}
-                  onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                  type="tel"
+                  placeholder="Enter your 10-digit mobile number"
+                  value={formData.mobile}
+                  onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                   className="w-full pl-7 pr-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Row 3: Organization & Password */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="space-y-0.5">
-              <label className="font-bold text-slate-700 text-[10px]">
-                {learnerType === 'independent' ? 'Affiliation (Optional)' : 'Organization / Institute Name *'}
-              </label>
-              <input
-                type="text"
-                placeholder={learnerType === 'independent' ? 'Independent Public Learner' : 'Enter organization / institute name'}
-                value={formData.organizationName}
-                onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
-                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"
-              />
             </div>
 
             <div className="space-y-0.5">
@@ -275,7 +221,7 @@ const RegisterPage = () => {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   required
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full pl-7 pr-7 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-[11px] text-slate-900 focus:ring-1 focus:ring-[#0B2545] focus:bg-white transition"

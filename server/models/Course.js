@@ -33,6 +33,11 @@ const courseSchema = new mongoose.Schema({
   capacity: { type: Number, default: 100 },
   thumbnail: { type: String, default: '' },
   
+  // Pricing & Monetization (Dual Tier: Free for Institute students vs Paid for direct external students)
+  isGovernmentFree: { type: Boolean, default: false },
+  individualPrice: { type: Number, default: 999 }, // In INR for direct external public students
+  currency: { type: String, default: 'INR' },
+  
   trainerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   trainerName: { type: String, default: 'Dr. A. K. Sharma' },
   

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import TraineeHeader from '../../components/TraineeHeader';
+import CoursePaymentModal from '../../components/CoursePaymentModal';
 import {
   Search,
   BookOpen,
@@ -15,7 +16,8 @@ import {
   GraduationCap,
   Sparkles,
   Layers,
-  RotateCcw
+  RotateCcw,
+  CreditCard
 } from 'lucide-react';
 import { useToast } from '../../context/NotificationContext';
 
@@ -41,6 +43,8 @@ const CourseCatalogue = () => {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [enrollingId, setEnrollingId] = useState(null);
+  const [selectedPaymentCourse, setSelectedPaymentCourse] = useState(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const fetchCourses = async () => {
@@ -83,11 +87,19 @@ const CourseCatalogue = () => {
     try {
       const res = await api.enrollCourse(courseId);
       if (res.success) {
-        toast.success('Successfully enrolled in course!');
+        toast.success(res.enrollmentType === 'INSTITUTE_SPONSORED_FREE' 
+          ? 'Enrolled for Free (Covered by Campus Membership)!' 
+          : 'Successfully enrolled in course!');
         navigate(`/trainee/course/${courseId}`);
       }
     } catch (err) {
-      toast.error(err.message, 'Enrollment Error');
+      if (err.status === 402 || err.paymentRequired || err.response?.status === 402) {
+        const targetCourse = courses.find(c => c._id === courseId);
+        setSelectedPaymentCourse(targetCourse);
+        setIsPaymentModalOpen(true);
+      } else {
+        toast.error(err.message || 'Enrollment error', 'Enrollment Notice');
+      }
     } finally {
       setEnrollingId(null);
     }
@@ -353,7 +365,24 @@ const CourseCatalogue = () => {
                 </div>
 
                 {/* Card CTA Footer */}
-                <div className="p-4 bg-slate-50/90 border-t border-slate-100">
+                <div className="p-4 bg-slate-50/90 border-t border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">Access Fee:</span>
+                    {course.isGovernmentFree ? (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        100% Free (Gov. Initiative)
+                      </span>
+                    ) : instituteName ? (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        Included in Campus Plan (FREE)
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-black bg-blue-100 text-blue-900 border border-blue-200">
+                        ₹{(course.individualPrice || 999).toLocaleString('en-IN')} (Direct Certification)
+                      </span>
+                    )}
+                  </div>
+
                   {enrolled ? (
                     <Link
                       to={`/trainee/course/${course._id}`}
@@ -369,7 +398,13 @@ const CourseCatalogue = () => {
                       className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center space-x-1.5 transition disabled:opacity-50 cursor-pointer"
                     >
                       <GraduationCap className="w-4 h-4" />
-                      <span>{enrollingId === course._id ? 'Enrolling...' : 'Enroll in Training Module'}</span>
+                      <span>
+                        {enrollingId === course._id
+                          ? 'Enrolling...'
+                          : (!course.isGovernmentFree && !instituteName
+                              ? `Pay ₹${(course.individualPrice || 999).toLocaleString('en-IN')} & Enroll`
+                              : '1-Click Free Enrollment')}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -378,6 +413,20 @@ const CourseCatalogue = () => {
           })}
         </div>
       )}
+
+      {/* External Student Payment Checkout Modal */}
+      <CoursePaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        course={selectedPaymentCourse}
+        onSuccess={() => {
+          toast.success('Payment verified! Course successfully unlocked.');
+          fetchCourses();
+          if (selectedPaymentCourse) {
+            navigate(`/trainee/course/${selectedPaymentCourse._id}`);
+          }
+        }}
+      />
     </div>
   );
 };

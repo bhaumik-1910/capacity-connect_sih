@@ -140,6 +140,7 @@ app.use('/api/v1/competencies', require('./routes/competencyRoutes'));
 app.use('/api/v1/sessions', require('./routes/sessionRoutes'));
 app.use('/api/v1/organizations', require('./routes/organizationRoutes'));
 app.use('/api/v1/students', require('./routes/studentRoutes'));
+app.use('/api/v1/payments', require('./routes/paymentRoutes'));
 
 // 404 handler
 app.use((req, res) => {

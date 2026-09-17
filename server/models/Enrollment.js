@@ -22,7 +22,15 @@ const enrollmentSchema = new mongoose.Schema({
   bestAssessmentScore: { type: Number, default: 0 },
   
   certificateIssued: { type: Boolean, default: false },
-  certificateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Certificate' }
+  certificateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Certificate' },
+  
+  // Payment Coverage Metadata
+  enrollmentType: { 
+    type: String, 
+    enum: ['INSTITUTE_SPONSORED_FREE', 'INDIVIDUAL_PAID', 'GOV_SCHOLARSHIP'], 
+    default: 'INSTITUTE_SPONSORED_FREE' 
+  },
+  paymentTransactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'PaymentTransaction' }
 }, { timestamps: true });
 
 // Ensure unique enrollment per trainee per course

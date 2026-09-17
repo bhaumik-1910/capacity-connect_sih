@@ -10,6 +10,7 @@
     "seed": "node seed/setupUsers.js",
     "test": "node tests/verify_api.js",
     "test:security": "node tests/verify_security_assessment.js",
+    "test:payment": "node tests/test_payment_workflow.js",
     "check:roles": "node scripts/check_all_roles.js"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.3.0",
     "qrcode": "^1.5.3",
+    "razorpay": "^2.9.8",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

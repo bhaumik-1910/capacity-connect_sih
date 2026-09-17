@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const Attempt = require('../models/Attempt');
+const Organization = require('../models/Organization');
 const { logAuditEvent } = require('../middleware/auditLogger');
 
 /**
@@ -29,6 +30,26 @@ const bulkImportStudents = async (req, res) => {
 
     if (!Array.isArray(students) || students.length === 0) {
       return res.status(400).json({ success: false, message: 'Students array is required and must not be empty.' });
+    }
+
+    // Check Institute Capacity Quota (e.g. 1000 student plan)
+    const orgId = req.user?.organizationId;
+    if (orgId && req.user?.role !== 'platform_admin') {
+      const org = await Organization.findById(orgId);
+      if (org) {
+        const currentCount = await User.countDocuments({ organizationId: org._id, role: { $in: ['trainee', 'student'] } });
+        const maxQuota = org.subscription?.maxStudentQuota || 1000;
+        const availableSlots = Math.max(0, maxQuota - currentCount);
+
+        if (students.length > availableSlots) {
+          return res.status(400).json({
+            success: false,
+            quotaExceeded: true,
+            message: `Campus Capacity Quota Exceeded! Your plan allows up to ${maxQuota} students (${currentCount} active, ${availableSlots} slots remaining). You tried to import ${students.length} students. Please upgrade your campus subscription tier.`,
+            metrics: { maxQuota, currentCount, availableSlots, requested: students.length }
+          });
+        }
+      }
     }
 
     let targetCourse = null;

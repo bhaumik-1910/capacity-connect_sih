@@ -113,6 +113,13 @@ const registerOrganization = async (req, res) => {
         footerNote: 'Valid subject to verified national meteorological capacity building registry.',
         templateVersion: 1
       },
+      subscription: {
+        planTier: req.body.subscriptionPlan === 'STARTER_250' ? 'STARTER_250' : req.body.subscriptionPlan === 'ENTERPRISE_5000' ? 'ENTERPRISE_5000' : 'STANDARD_1000',
+        maxStudentQuota: req.body.subscriptionPlan === 'STARTER_250' ? 250 : req.body.subscriptionPlan === 'ENTERPRISE_5000' ? 5000 : 1000,
+        billingAmount: req.body.subscriptionPlan === 'STARTER_250' ? 25000 : req.body.subscriptionPlan === 'ENTERPRISE_5000' ? 250000 : 75000,
+        activeStudentCount: 0,
+        status: 'ACTIVE'
+      },
       status: 'PENDING_VERIFICATION',
       verificationStatus: 'unverified'
     });

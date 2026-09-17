@@ -983,7 +983,7 @@ const StudentOnboardingManager = () => {
               <input
                 type="text"
                 required
-                placeholder="e.g., IMD2026101105"
+                placeholder="Enter enrollment number (e.g. IMD2026101105)"
                 value={singleStudent.enrollmentNumber}
                 onChange={(e) => setSingleStudent({ ...singleStudent, enrollmentNumber: e.target.value })}
                 className="w-full p-2.5 bg-slate-50 border rounded-lg text-xs font-mono font-bold"
@@ -1035,7 +1035,7 @@ const StudentOnboardingManager = () => {
                   <input
                     type="text"
                     list="institute-datalist"
-                    placeholder="e.g. Lok Jagruti Kendra University"
+                    placeholder="Enter institute or university name"
                     value={singleStudent.organizationName}
                     onChange={(e) => setSingleStudent({ ...singleStudent, organizationName: e.target.value })}
                     className="w-full p-2.5 bg-slate-50 border rounded-lg text-xs"
@@ -1053,7 +1053,7 @@ const StudentOnboardingManager = () => {
               <label className="font-semibold text-slate-700">Department / Unit</label>
               <input
                 type="text"
-                placeholder="e.g. Radar Meteorology Division"
+                placeholder="Enter department or academic division"
                 value={singleStudent.department}
                 onChange={(e) => setSingleStudent({ ...singleStudent, department: e.target.value })}
                 className="w-full p-2.5 bg-slate-50 border rounded-lg text-xs"
@@ -1064,7 +1064,7 @@ const StudentOnboardingManager = () => {
               <label className="font-semibold text-slate-700">Designation / Role</label>
               <input
                 type="text"
-                placeholder="e.g. Officer Trainee / Scientist"
+                placeholder="Enter student designation or rank"
                 value={singleStudent.designation}
                 onChange={(e) => setSingleStudent({ ...singleStudent, designation: e.target.value })}
                 className="w-full p-2.5 bg-slate-50 border rounded-lg text-xs"
@@ -1075,7 +1075,7 @@ const StudentOnboardingManager = () => {
               <label className="font-semibold text-slate-700">Mobile Phone</label>
               <input
                 type="tel"
-                placeholder="10-digit mobile"
+                placeholder="Enter 10-digit mobile number"
                 value={singleStudent.mobile}
                 onChange={(e) => setSingleStudent({ ...singleStudent, mobile: e.target.value })}
                 className="w-full p-2.5 bg-slate-50 border rounded-lg text-xs"
