@@ -9,10 +9,17 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  Key
+  CheckCircle2,
+  FileCheck,
 } from 'lucide-react';
 import { useDialog, useToast } from '../../context/NotificationContext';
+import { Button, Input } from '../../components/design-system';
 
+/**
+ * Government Minimalism Login Page (Section 21)
+ * Two-column desktop layout (Left: institutional mission, Right: clean login form)
+ * Single column mobile layout.
+ */
 const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -22,10 +29,11 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Universal Role-Aware Routing: Routes each accredited role directly to their authorized workspace
+  // Universal Role-Aware Routing
   const routeByRole = (userRole) => {
     const roleLower = (userRole || '').toLowerCase();
     if (roleLower === 'institute_admin' || roleLower === 'org_admin') {
@@ -47,12 +55,12 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const user = await login(email.trim(), password);
-      toast.success(`Welcome, ${user.name}! Redirecting to workspace...`, 'Login Successful');
+      toast.success(`Welcome, ${user.name}! Redirecting...`, 'Sign In Successful');
       routeByRole(user.role);
     } catch (err) {
-      const errorMsg = err.message || 'Authentication failed. Please verify your email and password.';
+      const errorMsg = err.message || 'Authentication failed. Please verify credentials.';
       setError(errorMsg);
-      toast.error(errorMsg, 'Sign In Failed');
+      toast.error(errorMsg, 'Authentication Error');
     } finally {
       setLoading(false);
     }
@@ -65,203 +73,211 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="w-full min-h-full flex items-center justify-center p-3 sm:p-4 lg:p-6 select-none bg-gradient-to-b from-slate-100 via-[#F8FAFC] to-slate-100">
-      <div className="max-w-md w-full my-auto py-4">
-        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-xl space-y-3.5 text-xs">
-
-          {/* Header */}
-          <div className="space-y-2 pb-2 border-b border-slate-100">
-            <div className="flex flex-wrap items-center justify-between gap-1.5">
-              <div className="flex items-center space-x-1.5 bg-slate-100 px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-slate-700 border border-slate-200">
-                <svg className="w-3.5 h-2.5 rounded-xs border border-white/20 flex-shrink-0" viewBox="0 0 900 600">
-                  <rect width="900" height="200" fill="#FF9933" />
-                  <rect y="200" width="900" height="200" fill="#FFFFFF" />
-                  <rect y="400" width="900" height="200" fill="#138808" />
-                  <circle cx="450" cy="300" r="80" fill="none" stroke="#000080" strokeWidth="12" />
-                  <circle cx="450" cy="300" r="16" fill="#000080" />
-                </svg>
-                <span className="font-bold text-slate-900">भारत सरकार</span>
-                <span className="text-slate-400">|</span>
-                <span>MoES / IMD</span>
-              </div>
-
-              <div className="inline-flex items-center space-x-1.5 bg-blue-50 text-blue-800 px-2.5 py-0.5 rounded-full font-bold text-[10px] border border-blue-200">
-                <Shield className="w-3 h-3 text-blue-600" />
-                <span>Official Single Sign-In</span>
-              </div>
+    <div className="w-full min-h-[calc(100vh-66px)] flex items-center justify-center p-4 sm:p-6 lg:p-12 bg-[#F7F8FA]">
+      <div className="w-full max-w-4xl bg-white rounded-[8px] border border-[#E5E7EB] shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden grid grid-cols-1 md:grid-cols-2">
+        
+        {/* LEFT COLUMN: Institutional Credibility & Identity */}
+        <div className="p-6 sm:p-10 lg:p-12 bg-[#F8FAFC] border-b md:border-b-0 md:border-r border-[#E5E7EB] flex flex-col justify-between">
+          <div>
+            {/* National Authority Badge */}
+            <div className="flex items-center gap-2 mb-6">
+              <span className="text-xs font-bold text-[#1F4E79] uppercase tracking-wider">
+                MoES · IMD
+              </span>
+              <span className="text-[#87919B] text-xs">|</span>
+              <span className="text-xs text-[#5F6B76]">
+                Problem Statement ID: 26075
+              </span>
             </div>
 
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                Sign In to Your Workspace
-              </h2>
-              <p className="text-slate-500 text-[11px] mt-0.5">
-                Enter your official credentials or student enrollment number.
-              </p>
+            {/* Title & Subtitle */}
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#17202A] tracking-tight mb-3">
+              CAPACITY CONNECT
+            </h1>
+            <p className="text-sm font-medium text-[#1F4E79] mb-4">
+              Smart Education & Learning Management Platform
+            </p>
+            <p className="text-xs sm:text-sm text-[#5F6B76] leading-relaxed mb-6">
+              Centralized institutional capacity building, meteorological competency tracking, and verifiable credential governance for India Meteorological Department and affiliated academic institutes.
+            </p>
+
+            {/* Trust Points */}
+            <div className="space-y-2.5 pt-4 border-t border-[#E5E7EB]">
+              <div className="flex items-center gap-2 text-xs text-[#5F6B76]">
+                <CheckCircle2 className="w-4 h-4 text-[#1F7A4D] flex-shrink-0" />
+                <span>Multi-tenant accredited institute isolation</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[#5F6B76]">
+                <CheckCircle2 className="w-4 h-4 text-[#1F7A4D] flex-shrink-0" />
+                <span>Cryptographically verifiable QR certificates</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-[#5F6B76]">
+                <CheckCircle2 className="w-4 h-4 text-[#1F7A4D] flex-shrink-0" />
+                <span>WMO-1083 meteorological competency taxonomy</span>
+              </div>
             </div>
           </div>
 
-          {/* Error Banner */}
-          {error && (
-            <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 flex items-start space-x-2 animate-in fade-in text-xs">
-              <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
-              <div className="leading-snug">{error}</div>
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-3">
-
-            {/* Email / Enrollment No Input */}
-            <div className="space-y-1">
-              <label className="font-bold text-slate-700 flex items-center justify-between text-[11px]">
-                <span>Official Email or Enrollment No</span>
-                <span className="text-[10px] text-blue-600 font-mono font-normal">Student ID Supported</span>
-              </label>
-              <div className="relative">
-                <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  required
-                  placeholder="Enter your email or enrollment number"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-[#0B2545] focus:bg-white transition"
-                />
-              </div>
-            </div>
-
-            {/* Password Input */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
-                <label className="font-bold text-slate-700">Password</label>
-                <button
-                  type="button"
-                  onClick={() => showAlert({
-                    title: 'Official Credential Recovery',
-                    message: 'For security reasons, password recovery for MoES/IMD official accounts is handled through the Central IT Cell.\n\nTrainee note: For accounts created via student bulk upload, your default password is the last 6 digits of your Enrollment Number.',
-                    confirmText: 'Understood',
-                    type: 'info'
-                  })}
-                  className="text-[10px] text-blue-600 hover:underline cursor-pointer"
-                >
-                  Forgot password?
-                </button>
-              </div>
-              <div className="relative">
-                <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-9 pr-9 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:ring-2 focus:ring-[#0B2545] focus:bg-white transition"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 p-0.5 transition cursor-pointer"
-                  title={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="w-3.5 h-3.5 text-blue-600" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Remember Me */}
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                defaultChecked
-                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
-              />
-              <label htmlFor="rememberMe" className="text-[11px] text-slate-600 cursor-pointer">
-                Remember session on this terminal
-              </label>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 bg-[#0B2545] hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center space-x-1.5 disabled:opacity-70 cursor-pointer"
+          {/* Left Footer: Public Certificate Verification Link */}
+          <div className="pt-8 mt-6 border-t border-[#E5E7EB]">
+            <Link
+              to="/verify"
+              className="inline-flex items-center gap-2 text-xs font-medium text-[#1F4E79] hover:underline"
             >
-              <span>{loading ? 'Authenticating Account...' : 'Sign In to Official Workspace'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </form>
+              <FileCheck className="w-4 h-4" />
+              <span>Verify Certificate Authenticity (No Login Required)</span>
+            </Link>
+          </div>
+        </div>
 
-          {/* Quick Auto-Fill Credential Selector (Space-Efficient Compact Pills) */}
-          <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-            <div className="flex items-center justify-between text-[10px] font-bold text-slate-700">
-              <span className="flex items-center gap-1">
-                <Key className="w-3 h-3 text-blue-600" />
-                <span>Fill Credentials (Click any role):</span>
-              </span>
-              <span className="text-[9px] text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded font-mono">Live DB</span>
+        {/* RIGHT COLUMN: Minimalist Login Form */}
+        <div className="p-6 sm:p-10 lg:p-12 flex flex-col justify-between">
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-[#17202A] tracking-tight">
+                Account Sign In
+              </h2>
+              <p className="text-xs text-[#5F6B76] mt-1">
+                Enter your official email address or student enrollment ID.
+              </p>
             </div>
 
-            <div className="flex flex-wrap gap-1.5 text-[10px]">
-              <button
-                type="button"
-                onClick={() => handleFillCredentials('bhaumikkothiya1@gmail.com', 'Bhaumik@1910')}
-                className="px-2 py-1 bg-white hover:bg-slate-800 hover:text-white border border-slate-200 rounded-lg font-semibold text-slate-700 transition cursor-pointer"
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-[#FEE4E2] border border-[#FECDCA] rounded-[6px] text-xs text-[#912018] flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Login Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Email or Student Enrollment Number"
+                required
+                type="text"
+                placeholder="name@domain.gov.in or ST-1002"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                icon={Mail}
+              />
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-[#17202A]">Password</label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      showAlert({
+                        title: 'Official Credential Recovery',
+                        message:
+                          'For security reasons, password recovery for MoES/IMD official accounts is coordinated with the Institutional IT Cell.\n\nTrainees: Your default password is the last 6 digits of your Enrollment Number.',
+                        confirmText: 'Understood',
+                        type: 'info',
+                      })
+                    }
+                    className="text-xs text-[#1F4E79] hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-white text-[#17202A] text-sm rounded-[6px] border border-[#E5E7EB] focus:border-[#1F4E79] focus:ring-2 focus:ring-[#EAF2F8] px-3 py-2 pr-9 transition-colors focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-[#87919B] hover:text-[#17202A] transition cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Me */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded-[4px] border-[#E5E7EB] text-[#1F4E79] focus:ring-[#1F4E79] w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="rememberMe" className="text-xs text-[#5F6B76] cursor-pointer">
+                  Remember session on this computer
+                </label>
+              </div>
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                loading={loading}
+                variant="primary"
+                className="w-full mt-2"
               >
-                🏛️ Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillCredentials('info@ljku.edu.in', 'Alok@123')}
-                className="px-2 py-1 bg-white hover:bg-emerald-700 hover:text-white border border-slate-200 rounded-lg font-semibold text-slate-700 transition cursor-pointer"
-              >
-                🏢 Institute
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillCredentials('jd@gmail.com', 'Jd@123')}
-                className="px-2 py-1 bg-white hover:bg-indigo-700 hover:text-white border border-slate-200 rounded-lg font-semibold text-slate-700 transition cursor-pointer"
-              >
-                👨‍🏫 Trainer
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillCredentials('25004406110009', '110009')}
-                className="px-2 py-1 bg-white hover:bg-blue-700 hover:text-white border border-slate-200 rounded-lg font-semibold text-slate-700 transition cursor-pointer"
-              >
-                🎓 Student
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillCredentials('verifier@moes.gov.in', 'Verifier@123')}
-                className="px-2 py-1 bg-white hover:bg-rose-700 hover:text-white border border-slate-200 rounded-lg font-semibold text-slate-700 transition cursor-pointer"
-              >
-                🔍 Verifier
-              </button>
+                Sign In
+              </Button>
+            </form>
+
+            {/* Minimalist Demo Credential Selector */}
+            <div className="mt-6 pt-4 border-t border-[#E5E7EB]">
+              <div className="flex items-center justify-between text-xs text-[#5F6B76] mb-2">
+                <span className="font-medium">Quick Credentials:</span>
+                <span className="text-[11px] text-[#87919B]">Click to test</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleFillCredentials('bhaumikkothiya1@gmail.com', 'Bhaumik@1910')}
+                  className="px-2 py-1 bg-[#F8FAFC] hover:bg-[#EAF2F8] text-[#17202A] hover:text-[#1F4E79] border border-[#E5E7EB] rounded-[4px] text-xs transition-colors cursor-pointer"
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFillCredentials('info@ljku.edu.in', 'Alok@123')}
+                  className="px-2 py-1 bg-[#F8FAFC] hover:bg-[#EAF2F8] text-[#17202A] hover:text-[#1F4E79] border border-[#E5E7EB] rounded-[4px] text-xs transition-colors cursor-pointer"
+                >
+                  Institute
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFillCredentials('jd@gmail.com', 'Jd@123')}
+                  className="px-2 py-1 bg-[#F8FAFC] hover:bg-[#EAF2F8] text-[#17202A] hover:text-[#1F4E79] border border-[#E5E7EB] rounded-[4px] text-xs transition-colors cursor-pointer"
+                >
+                  Trainer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFillCredentials('25004406110009', '110009')}
+                  className="px-2 py-1 bg-[#F8FAFC] hover:bg-[#EAF2F8] text-[#17202A] hover:text-[#1F4E79] border border-[#E5E7EB] rounded-[4px] text-xs transition-colors cursor-pointer"
+                >
+                  Student
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Registration Links */}
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
-            <Link to="/register" className="text-blue-600 font-bold hover:underline">
-              Register Forecaster
+          <div className="pt-6 mt-4 border-t border-[#E5E7EB] flex items-center justify-between text-xs text-[#5F6B76]">
+            <Link to="/register-institute" className="hover:text-[#1F4E79] hover:underline">
+              Register New Institute
             </Link>
-            <span className="text-slate-300">•</span>
-            <Link to="/register-institute" className="text-amber-700 font-bold hover:underline">
-              Register Institute
+            <span>·</span>
+            <Link to="/register" className="hover:text-[#1F4E79] hover:underline">
+              Student Self-Registration
             </Link>
           </div>
-
-          {/* Security Footnote */}
-          <div className="text-center text-[9px] text-slate-400">
-            <span className="font-mono">TLS 1.3 256-Bit Encrypted Session • MoES WMO-1083 Standard</span>
-          </div>
-
         </div>
 
       </div>
-
     </div>
   );
 };

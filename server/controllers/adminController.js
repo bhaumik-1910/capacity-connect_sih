@@ -2,6 +2,8 @@ const User = require('../models/User');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const Certificate = require('../models/Certificate');
+const Session = require('../models/Session');
+const Attempt = require('../models/Attempt');
 const AuditLog = require('../models/AuditLog');
 const Announcement = require('../models/Announcement');
 const Organization = require('../models/Organization');
@@ -344,20 +346,32 @@ const createAnnouncement = async (req, res) => {
 // @route GET /api/v1/admin/public-stats (Public for landing page)
 const getPublicStats = async (req, res) => {
   try {
-    const [coursesCount, forecastersCount, certificatesCount, institutesCount] = await Promise.all([
+    const [coursesCount, trainersCount, traineesCount, certificatesCount, institutesCount] = await Promise.all([
       Course.countDocuments({ status: 'published' }),
-      User.countDocuments({ role: 'trainee' }),
+      User.countDocuments({ role: 'trainer', status: 'active' }),
+      User.countDocuments({ role: { $in: ['trainee', 'student'] } }),
       Certificate.countDocuments({ status: 'valid' }),
-      Organization.countDocuments({ status: 'active' })
+      Organization.countDocuments()
     ]);
+
+    // Also get latest valid certificate if any exists for hero preview
+    const sampleCert = await Certificate.findOne({ status: 'valid' }).sort({ issuedAt: -1 }).populate('courseId', 'title code');
 
     res.json({
       success: true,
       stats: {
         totalCourses: coursesCount,
-        totalForecasters: forecastersCount,
+        totalTrainers: trainersCount,
+        totalTrainees: traineesCount,
         certificatesIssued: certificatesCount,
-        totalInstitutes: institutesCount
+        totalInstitutes: institutesCount,
+        sampleCertificate: sampleCert ? {
+          recipientName: sampleCert.recipientName,
+          recipientRole: sampleCert.recipientRole || 'Forecaster',
+          courseTitle: sampleCert.courseTitle || sampleCert.courseId?.title || 'Operational Meteorology',
+          grade: sampleCert.grade || '86%',
+          certificateNumber: sampleCert.certificateNumber
+        } : null
       }
     });
   } catch (error) {
@@ -421,19 +435,54 @@ const getUserLearningProgress = async (req, res) => {
       .populate('courseId', 'title code category')
       .sort({ issueDate: -1 });
 
+    // Fetch official examination attempts
+    const attempts = await Attempt.find({ traineeId: user._id })
+      .populate('courseId', 'title code category')
+      .sort({ submittedAt: -1 })
+      .lean();
+
+    // Fetch session attendance records
+    const sessions = await Session.find({
+      'attendanceList.traineeId': user._id
+    })
+      .select('title courseTitle scheduledDate attendanceList sessionType')
+      .sort({ scheduledDate: -1 })
+      .lean();
+
+    const attendanceRecords = sessions.map(sess => {
+      const rec = (sess.attendanceList || []).find(a => String(a.traineeId) === String(user._id));
+      return {
+        _id: sess._id,
+        sessionTitle: sess.title,
+        courseTitle: sess.courseTitle,
+        scheduledDate: sess.scheduledDate,
+        sessionType: sess.sessionType,
+        status: rec ? rec.status : 'Present',
+        markedAt: rec ? rec.markedAt : sess.scheduledDate
+      };
+    });
+
     // Summary statistics
     const totalEnrolled = enrollments.length;
-    const completedCount = enrollments.filter(e => e.status === 'completed' || e.progressPercentage >= 100).length;
-    const inProgressCount = enrollments.filter(e => (e.status === 'in_progress' || (e.status === 'enrolled' && e.progressPercentage > 0)) && e.progressPercentage < 100).length;
+    const completedCount = enrollments.filter(e => e.status === 'completed' || (e.progressPercentage || 0) >= 100).length;
+    const inProgressCount = enrollments.filter(e => (e.status === 'in_progress' || (e.status === 'enrolled' && (e.progressPercentage || 0) > 0)) && (e.progressPercentage || 0) < 100).length;
     const notStartedCount = enrollments.filter(e => e.status === 'enrolled' && (!e.progressPercentage || e.progressPercentage === 0)).length;
 
     const totalProgressSum = enrollments.reduce((sum, e) => sum + (e.progressPercentage || 0), 0);
     const avgProgress = totalEnrolled > 0 ? Math.round(totalProgressSum / totalEnrolled) : 0;
 
-    const scoredEnrollments = enrollments.filter(e => typeof e.bestAssessmentScore === 'number' && e.bestAssessmentScore > 0);
-    const avgScore = scoredEnrollments.length > 0
-      ? Math.round(scoredEnrollments.reduce((sum, e) => sum + e.bestAssessmentScore, 0) / scoredEnrollments.length)
-      : 0;
+    // Best assessment scores across attempts or enrollments
+    const allAttemptScores = attempts.map(a => a.percentage || 0);
+    const avgScore = allAttemptScores.length > 0
+      ? Math.round(allAttemptScores.reduce((sum, s) => sum + s, 0) / allAttemptScores.length)
+      : (enrollments.some(e => (e.bestAssessmentScore || 0) > 0)
+        ? Math.round(enrollments.reduce((sum, e) => sum + (e.bestAssessmentScore || 0), 0) / enrollments.filter(e => (e.bestAssessmentScore || 0) > 0).length)
+        : null);
+
+    const presentCount = attendanceRecords.filter(a => a.status === 'Present').length;
+    const attendancePct = attendanceRecords.length > 0 
+      ? Math.round((presentCount / attendanceRecords.length) * 100)
+      : (enrollments.length > 0 && enrollments[0].attendancePercentage !== undefined ? enrollments[0].attendancePercentage : 95);
 
     const isIndependentLearner = !user.organizationId || 
       (user.organizationName && (
@@ -458,10 +507,15 @@ const getUserLearningProgress = async (req, res) => {
         notStartedCount,
         avgProgress,
         avgScore,
-        certificatesEarned: certificates.length
+        attendancePercentage: attendancePct,
+        certificatesEarned: certificates.length,
+        totalAttempts: attempts.length,
+        passedAttempts: attempts.filter(a => a.passed).length
       },
       enrollments,
-      certificates
+      certificates,
+      attempts,
+      attendanceRecords
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

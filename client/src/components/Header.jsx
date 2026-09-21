@@ -2,44 +2,74 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
-  Shield,
-  BookOpen,
-  Building2,
   Search,
   LogOut,
   Menu,
   X,
-  ChevronRight,
-  ChevronDown,
-  User,
-  Info,
-  CheckCircle2,
   Bell,
-  Sparkles,
-  LayoutDashboard,
-  Compass,
-  Award,
-  UserCheck,
-  GraduationCap,
-  Users,
-  Loader2,
-  CreditCard
+  User,
+  Shield,
+  FileCheck,
+  Building2,
+  ArrowLeft,
 } from 'lucide-react';
+import Badge from './design-system/Badge';
 
+/**
+ * Government Minimalism Topbar (Section 11)
+ * Height: 64px
+ * Breadcrumb / Identity, Subtle Search, Notifications, Profile
+ */
 const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   const { user, logout, loggingOut } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [mobilePublicMenuOpen, setMobilePublicMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const profileRef = useRef(null);
+  const notifRef = useRef(null);
 
-  // Close dropdown when clicking outside
+  // Smooth scroll or navigate to public landing page sections
+  const handlePublicNav = (sectionId) => {
+    setMobilePublicMenuOpen(false);
+    if (location.pathname !== '/') {
+      navigate(`/#${sectionId}`);
+      setTimeout(() => {
+        const el = document.getElementById(sectionId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
+    } else {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
+  const handleHomeClick = (e) => {
+    setMobilePublicMenuOpen(false);
+    if (location.pathname === '/') {
+      e.preventDefault();
+      const mainEl = document.getElementById('main-content');
+      if (mainEl) {
+        mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileDropdownOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setNotificationsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -47,507 +77,365 @@ const Header = ({ onToggleSidebar, isSidebarOpen }) => {
   }, []);
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
     try {
       await logout();
       setProfileDropdownOpen(false);
       navigate('/login');
-    } finally {
-      setIsLoggingOut(false);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const isActive = (path) => location.pathname === path;
-
-  // Derive initials for avatar
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-  };
-
-  // Format clean role label without raw technical strings like 'platform_admin'
-  const formatRoleLabel = (role) => {
-    if (!role) return 'OFFICER';
-    if (role === 'platform_admin' || role === 'admin') return 'ADMIN';
-    if (role === 'org_admin') return 'INSTITUTE ADMIN';
-    if (role === 'trainer') return 'TRAINER';
-    if (role === 'trainee') return 'TRAINEE';
-    return role.replace(/_/g, ' ').toUpperCase();
+  // Derive route title or breadcrumb context
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path.includes('/dashboard')) return 'Dashboard';
+    if (path.includes('/institutes')) return 'Institutional Directory';
+    if (path.includes('/students') || path.includes('/student-onboarding')) return 'Students';
+    if (path.includes('/trainers')) return 'Trainers';
+    if (path.includes('/courses') || path.includes('/catalogue') || path.includes('/course-builder')) return 'Courses';
+    if (path.includes('/assessments') || path.includes('/question-bank')) return 'Assessments';
+    if (path.includes('/certificates')) return 'Certificates';
+    if (path.includes('/audit-logs')) return 'Audit Logs';
+    if (path.includes('/competency')) return 'Competency Framework';
+    if (path.includes('/verify')) return 'Certificate Verification';
+    if (path === '/') return 'Overview';
+    return 'Capacity Connect';
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.06)] select-none transition-all">
-      {/* 1. Official Government of India Tricolor Ribbon Accent */}
-      <div className="w-full h-1 bg-gradient-to-r from-[#FF9933] via-[#FFFFFF] to-[#138808]" />
+    <header className="sticky top-0 z-40 bg-white border-b border-[#E5E7EB] select-none">
+      {/* 1. Official Government Tricolor Ribbon Accent (Subtle 2px) */}
+      <div className="gov-tricolor-accent" />
 
-      {/* 2. Primary White-Theme Navigation Bar */}
-      <div className="bg-white text-slate-800 px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4">
-        
-        {/* Left Section: Mobile Sidebar Toggle + Brand & Government Identity */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          {/* Mobile Sidebar Hamburger Toggle for logged-in user */}
+      {/* 2. Topbar Content: Exactly 64px Height */}
+      <div className="h-16 px-4 sm:px-6 flex items-center justify-between gap-4">
+        {/* Left: Official Government of India & IMD Identity */}
+        <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-shrink-0">
           {user && (
             <button
               type="button"
-              id="mobile-sidebar-toggle-btn"
               onClick={onToggleSidebar}
-              className="p-2 lg:hidden text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 transition-all cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/30 flex items-center justify-center"
-              aria-label="Toggle Sidebar Menu"
-              title="Open Navigation Menu"
+              className="p-1.5 text-[#5F6B76] hover:text-[#17202A] hover:bg-[#F1F3F6] rounded-[6px] lg:hidden cursor-pointer flex-shrink-0"
+              aria-label="Toggle navigation drawer"
             >
-              {isSidebarOpen ? (
-                <X className="w-5 h-5 text-blue-700" />
-              ) : (
-                <Menu className="w-5 h-5 text-slate-700" />
-              )}
+              <Menu className="w-5 h-5" />
             </button>
           )}
 
-          {/* Brand & Government Identity */}
-          <Link to="/" className="flex items-center space-x-2.5 sm:space-x-3 group flex-shrink-0">
-            <div className="flex items-center space-x-2">
-              {/* National Emblem */}
-              <div className="h-10 sm:h-11 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                <img
-                  src="/emblem-india.png"
-                  alt="National Emblem of India"
-                  className="h-10 sm:h-11 w-auto object-contain"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '/logo-moes.png';
-                  }}
-                />
-              </div>
-
-              {/* Subtle Divider */}
-              <div className="h-7 w-px bg-slate-200 hidden sm:block"></div>
-
-              {/* MoES Official Round Seal */}
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white shadow-xs group-hover:scale-105 transition-transform duration-200 flex items-center justify-center flex-shrink-0 border border-slate-200/90 overflow-hidden">
-                <img
-                  src="/logo-moes.png"
-                  alt="Ministry of Earth Sciences Official Seal"
-                  className="w-full h-full object-cover rounded-full"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = '/emblem-india.png';
-                  }}
-                />
+          <Link to="/" onClick={handleHomeClick} className="flex items-center gap-2.5 sm:gap-3.5 group flex-shrink-0">
+            {/* 1. National Emblem of India (Ashoka Lion Capital) */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <img
+                src="/emblem-india.svg"
+                alt="State Emblem of India"
+                className="h-9 sm:h-10 w-auto object-contain flex-shrink-0"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/emblem-india.png';
+                }}
+              />
+              <div className="hidden xl:flex flex-col text-left leading-none justify-center">
+                <span className="text-[10px] font-bold text-[#17202A] tracking-tight">भारत सरकार</span>
+                <span className="text-[9px] text-[#5F6B76] font-medium">Govt. of India</span>
               </div>
             </div>
 
-            <div>
-              <span className="font-extrabold tracking-tight text-[#0B2545] text-base sm:text-lg lg:text-xl block leading-tight">
-                CAPACITY CONNECT
+            {/* Vertical Divider */}
+            <div className="h-7 w-px bg-[#E5E7EB] hidden sm:block flex-shrink-0" />
+
+            {/* 3. Portal Identity */}
+            <div className="flex flex-col text-left justify-center min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs sm:text-sm font-bold text-[#1F4E79] tracking-tight uppercase truncate">
+                  CAPACITY CONNECT
+                </span>
+                <span className="hidden sm:inline-block px-1.5 py-0.2 rounded-[3px] bg-[#EAF2F8] text-[#1F4E79] text-[9px] font-semibold border border-[#D0E1F0]">
+                  MoES
+                </span>
+              </div>
+              <span className="text-[10px] text-[#5F6B76] leading-tight truncate hidden sm:block">
+                Smart Education & Competency Platform
               </span>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 hidden sm:block font-medium">
-                Ministry of Earth Sciences • Government of India
-              </p>
             </div>
           </Link>
+
+          {/* Current Page Context Breadcrumb (when in app) */}
+          {user && (
+            <div className="hidden lg:flex items-center gap-1.5 pl-2 border-l border-[#E5E7EB] text-xs">
+              <span className="text-[#87919B]">/</span>
+              <span className="font-semibold text-[#17202A] truncate">
+                {getPageTitle()}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Public Desktop Navigation Links - Modern Crisp White Pills */}
-        <nav className="hidden lg:flex items-center space-x-1 text-xs font-semibold">
-          <Link
-            to="/"
-            className={`px-3.5 py-2 rounded-xl transition-all duration-150 ${
-              isActive('/')
-                ? 'bg-slate-100 text-[#0B2545] font-bold shadow-xs border border-slate-200'
-                : 'text-slate-600 hover:text-[#0B2545] hover:bg-slate-50'
-            }`}
-          >
-            Home
-          </Link>
+        {/* Center: Minimal subtle search (Only when user logged in) */}
+        {user && (
+          <div className="hidden md:flex items-center flex-1 max-w-xs mx-4">
+            <div className="relative w-full">
+              <Search className="w-4 h-4 text-[#87919B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search resources, records..."
+                className="w-full bg-[#F8FAFC] hover:bg-white focus:bg-white text-xs text-[#17202A] placeholder-[#87919B] rounded-[6px] border border-[#E5E7EB] focus:border-[#1F4E79] focus:ring-1 focus:ring-[#1F4E79] pl-9 pr-3 py-1.5 transition-colors focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
 
-          <Link
-            to="/trainee/catalogue"
-            className={`px-3.5 py-2 rounded-xl transition-all duration-150 flex items-center space-x-1.5 ${
-              isActive('/trainee/catalogue')
-                ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200 shadow-xs'
-                : 'text-slate-600 hover:text-blue-700 hover:bg-blue-50/50'
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-            <span>Course Catalogue</span>
-          </Link>
+        {/* Center/Right: Public Navigation Menu (when not logged in) */}
+        {!user && (
+          <nav className="hidden md:flex items-center gap-4 lg:gap-6 text-xs font-medium text-[#5F6B76]">
+            <Link
+              to="/"
+              onClick={handleHomeClick}
+              className={`hover:text-[#1F4E79] transition-colors py-1 cursor-pointer ${
+                location.pathname === '/' && !location.hash
+                  ? 'text-[#1F4E79] border-b-2 border-[#1F4E79] font-bold'
+                  : 'text-[#5F6B76] font-medium'
+              }`}
+            >
+              Home
+            </Link>
+            <button
+              type="button"
+              onClick={() => handlePublicNav('about')}
+              className="hover:text-[#1F4E79] transition-colors cursor-pointer py-1"
+            >
+              About
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePublicNav('courses')}
+              className="hover:text-[#1F4E79] transition-colors cursor-pointer py-1"
+            >
+              Courses
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePublicNav('institutes')}
+              className="hover:text-[#1F4E79] transition-colors cursor-pointer py-1"
+            >
+              Institutes
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePublicNav('announcements')}
+              className="hover:text-[#1F4E79] transition-colors cursor-pointer py-1"
+            >
+              Announcements
+            </button>
+            <Link
+              to="/register-institute"
+              className={`hover:text-[#1F4E79] transition-colors flex items-center gap-1.5 py-1 ${
+                location.pathname === '/register-institute'
+                  ? 'text-[#1F4E79] border-b-2 border-[#1F4E79] font-bold'
+                  : 'text-[#5F6B76] font-medium'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-[#1F4E79]" />
+              <span>Register Institute</span>
+            </Link>
+            <Link
+              to="/verify"
+              className={`hover:text-[#1F4E79] transition-colors flex items-center gap-1.5 font-semibold py-1 ${
+                location.pathname.startsWith('/verify')
+                  ? 'text-[#1F4E79] border-b-2 border-[#1F4E79]'
+                  : 'text-[#1F4E79]'
+              }`}
+            >
+              <FileCheck className="w-3.5 h-3.5" />
+              <span>Verify Certificate</span>
+            </Link>
+          </nav>
+        )}
 
-          <Link
-            to="/register-institute"
-            className={`px-3.5 py-2 rounded-xl transition-all duration-150 flex items-center space-x-1.5 ${
-              isActive('/register-institute')
-                ? 'bg-amber-50 text-amber-900 font-bold border border-amber-300 shadow-xs'
-                : 'text-amber-800 bg-amber-50/40 hover:bg-amber-100/60 border border-amber-200/60'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5 text-amber-600" />
-            <span>Register Institute</span>
-          </Link>
-
-          <Link
-            to="/verify"
-            className={`px-3.5 py-2 rounded-xl transition-all duration-150 flex items-center space-x-1.5 ${
-              isActive('/verify')
-                ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-300 shadow-xs'
-                : 'text-emerald-800 bg-emerald-50/40 hover:bg-emerald-100/60 border border-emerald-200/60'
-            }`}
-          >
-            <Search className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Verify Certificate</span>
-          </Link>
-
-          <Link
-            to="/pricing"
-            className={`px-3.5 py-2 rounded-xl transition-all duration-150 flex items-center space-x-1.5 ${
-              isActive('/pricing')
-                ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200 shadow-xs'
-                : 'text-slate-600 hover:text-[#0B2545] hover:bg-slate-50'
-            }`}
-          >
-            <CreditCard className="w-3.5 h-3.5 text-blue-600" />
-            <span>Plans & Pricing</span>
-          </Link>
-
-          <Link
-            to="/about"
-            className={`px-3.5 py-2 rounded-xl transition-all duration-150 flex items-center space-x-1.5 ${
-              isActive('/about')
-                ? 'bg-slate-100 text-[#0B2545] font-bold border border-slate-200'
-                : 'text-slate-600 hover:text-[#0B2545] hover:bg-slate-50'
-            }`}
-          >
-            <Info className="w-3.5 h-3.5 text-slate-400" />
-            <span>MoES Framework</span>
-          </Link>
-        </nav>
-
-        {/* Right Section: User Profile or Sign In */}
-        <div className="flex items-center space-x-3">
+        {/* Right Section: Notifications & User Profile OR Public Actions */}
+        <div className="flex items-center gap-2">
           {user ? (
-            <div className="flex items-center space-x-3 pl-2 sm:pl-3 border-l border-slate-200">
-              
-              {/* User Avatar Dropdown Trigger */}
-              <div ref={profileRef} className="relative">
+            <>
+              {/* Notification Center Popover */}
+              <div className="relative" ref={notifRef}>
                 <button
                   type="button"
-                  id="user-profile-menu-button"
-                  onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                  className={`relative flex items-center justify-center p-0.5 rounded-2xl transition-all duration-200 cursor-pointer focus:outline-none ${
-                    profileDropdownOpen
-                      ? 'ring-4 ring-blue-500/30 scale-105 shadow-md'
-                      : 'hover:ring-4 hover:ring-blue-500/20 hover:scale-105 shadow-xs'
-                  }`}
-                  aria-expanded={profileDropdownOpen}
-                  aria-haspopup="true"
-                  title={`${user.name} (${formatRoleLabel(user.role)}) - Click to open menu`}
+                  onClick={() => setNotificationsOpen(!notificationsOpen)}
+                  className="p-2 text-[#5F6B76] hover:text-[#17202A] hover:bg-[#F1F3F6] rounded-[6px] transition-colors relative cursor-pointer"
+                  aria-label="Notifications"
                 >
-                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xs text-white shadow-sm ${
-                    user.role === 'trainee'
-                      ? 'bg-gradient-to-br from-blue-600 to-cyan-600'
-                      : user.role === 'trainer'
-                      ? 'bg-gradient-to-br from-indigo-600 to-purple-600'
-                      : 'bg-gradient-to-br from-slate-900 to-[#0B2545]'
-                  }`}>
-                    {getInitials(user.name)}
-                  </div>
-                  {/* Verified Online Active Indicator */}
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full shadow-2xs" />
+                  <Bell className="w-4 h-4" />
+                  <span className="w-2 h-2 rounded-full bg-[#1F4E79] absolute top-2 right-2 ring-2 ring-white" />
                 </button>
 
-                {/* Dropdown Menu Modal */}
-                {profileDropdownOpen && (
-                  <div 
-                    id="user-profile-dropdown-menu"
-                    className="absolute right-0 top-full mt-2.5 w-[calc(100vw-28px)] max-w-sm sm:w-96 bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(11,37,69,0.22)] border border-slate-200 p-4 space-y-3.5 z-50 transition-all animate-in fade-in"
-                  >
-                    {/* User Identity Header Card */}
-                    <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/50 border border-slate-200/90 space-y-2.5">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm text-white shadow-xs flex-shrink-0 ${
-                          user.role === 'trainee'
-                            ? 'bg-gradient-to-br from-blue-600 to-cyan-600'
-                            : user.role === 'trainer'
-                            ? 'bg-gradient-to-br from-indigo-600 to-purple-600'
-                            : 'bg-gradient-to-br from-slate-900 to-[#0B2545]'
-                        }`}>
-                          {getInitials(user.name)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm truncate">
-                              {user.name?.replace(/\s*\(DG Admin\)/i, '').trim()}
-                            </h4>
-                            <span className={`text-[9px] px-1.5 py-0.2 rounded-md font-mono uppercase font-bold tracking-wider border ${
-                              user.role === 'trainee'
-                                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                : user.role === 'trainer'
-                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                                : 'bg-amber-50 text-amber-900 border-amber-300'
-                            }`}>
-                              {formatRoleLabel(user.role)}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-mono truncate mt-0.5">{user.email}</p>
-                        </div>
+                {notificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-[8px] border border-[#E5E7EB] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-2 z-50">
+                    <div className="px-3.5 py-2 border-b border-[#E5E7EB] flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#17202A]">Notifications</span>
+                      <span className="text-[11px] text-[#1F4E79] font-medium cursor-pointer">Mark read</span>
+                    </div>
+                    <div className="divide-y divide-[#E5E7EB] max-h-64 overflow-y-auto">
+                      <div className="p-3 hover:bg-[#F8FAFC] transition-colors">
+                        <p className="text-xs font-semibold text-[#17202A]">Course Enrollment Confirmed</p>
+                        <p className="text-[11px] text-[#5F6B76] mt-0.5">Atmospheric Modeling & Doppler Radar analysis module ready.</p>
+                        <span className="text-[10px] text-[#87919B] mt-1 block">10 mins ago</span>
                       </div>
-
-                      <div className="pt-2 border-t border-slate-200/70 text-[11px] text-slate-600 space-y-1">
-                        <div className="flex items-center space-x-1.5">
-                          <Building2 className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                          <span className="font-semibold text-slate-800 truncate">
-                            {user.organizationName || 'India Meteorological Department (IMD)'}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-1.5">
-                          <Shield className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                          <span className="truncate text-slate-500">
-                            {user.designation || 'Scientific Officer'} • {user.department || 'Governance'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between pt-1 font-mono text-[10px] text-emerald-600">
-                          <span className="flex items-center space-x-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>Active MoES Session</span>
-                          </span>
-                          <span className="text-slate-400">Gov Cloud Secure</span>
-                        </div>
+                      <div className="p-3 hover:bg-[#F8FAFC] transition-colors">
+                        <p className="text-xs font-semibold text-[#17202A]">Institute Verification Approved</p>
+                        <p className="text-[11px] text-[#5F6B76] mt-0.5">National Meteorological Training Center accreditation valid.</p>
+                        <span className="text-[10px] text-[#87919B] mt-1 block">1 hour ago</span>
                       </div>
                     </div>
-
-                    {/* Role-Specific Quick Navigation Links */}
-                    <div className="space-y-0.5 text-xs">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-                        Workspace Navigation
-                      </div>
-
-                      {user.role?.toLowerCase().includes('admin') ? (
-                        <>
-                          <Link
-                            to="/admin/dashboard"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <LayoutDashboard className="w-4 h-4 text-blue-600" />
-                              <span>Executive Dashboard</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                          <Link
-                            to="/admin/institutes"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <Building2 className="w-4 h-4 text-indigo-600" />
-                              <span>Institutional Directory</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                          <Link
-                            to="/admin/user-approvals"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <UserCheck className="w-4 h-4 text-amber-600" />
-                              <span>User Verification Queue</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                        </>
-                      ) : user.role === 'trainer' ? (
-                        <>
-                          <Link
-                            to="/trainer/dashboard"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-indigo-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <LayoutDashboard className="w-4 h-4 text-indigo-600" />
-                              <span>Trainer Studio</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                          <Link
-                            to="/trainer/course-builder"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-indigo-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <BookOpen className="w-4 h-4 text-blue-600" />
-                              <span>Course Builder Wizard</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                          <Link
-                            to="/trainer/my-courses"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-indigo-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                              <span>My Authored Courses</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                        </>
-                      ) : (
-                        <>
-                          <Link
-                            to="/trainee/dashboard"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <LayoutDashboard className="w-4 h-4 text-blue-600" />
-                              <span>Trainee Dashboard</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                          <Link
-                            to="/trainee/catalogue"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <BookOpen className="w-4 h-4 text-sky-600" />
-                              <span>Course Catalogue</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                          <Link
-                            to="/trainee/competency-passport"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <Compass className="w-4 h-4 text-indigo-600" />
-                              <span>Competency Passport</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                          <Link
-                            to="/trainee/certificates"
-                            onClick={() => setProfileDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-blue-700 transition font-medium"
-                          >
-                            <span className="flex items-center space-x-2.5">
-                              <Award className="w-4 h-4 text-amber-600" />
-                              <span>My Certificates</span>
-                            </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                          </Link>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Dropdown Footer: Sign Out Button */}
-                    <div className="pt-2 border-t border-slate-100">
-                      <button
-                        type="button"
-                        disabled={isLoggingOut || loggingOut}
-                        onClick={handleLogout}
-                        className="w-full py-2.5 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-2 shadow-2xs cursor-pointer border border-rose-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {isLoggingOut || loggingOut ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-rose-600" />
-                        ) : (
-                          <LogOut className="w-4 h-4" />
-                        )}
-                        <span>{isLoggingOut || loggingOut ? 'Signing Out...' : 'Sign Out / Log Out'}</span>
-                      </button>
-                    </div>
-
                   </div>
                 )}
               </div>
-            </div>
+
+              {/* Profile Dropdown */}
+              <div className="relative" ref={profileRef}>
+                <button
+                  type="button"
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="flex items-center gap-2 p-1.5 rounded-[6px] hover:bg-[#F1F3F6] transition-colors cursor-pointer"
+                  aria-label="User menu"
+                >
+                  <div className="w-7 h-7 rounded-[6px] bg-[#EAF2F8] text-[#1F4E79] font-bold text-xs flex items-center justify-center border border-[#D0E1F0]">
+                    {user.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-xs font-semibold text-[#17202A] hidden sm:inline max-w-[120px] truncate">
+                    {user.name}
+                  </span>
+                </button>
+
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-[8px] border border-[#E5E7EB] shadow-[0_4px_16px_rgba(0,0,0,0.08)] py-1.5 z-50">
+                    <div className="px-3 py-2 border-b border-[#E5E7EB]">
+                      <div className="text-xs font-bold text-[#17202A] truncate">{user.name}</div>
+                      <div className="text-[11px] text-[#5F6B76] truncate">{user.email}</div>
+                      <div className="mt-1">
+                        <Badge variant="neutral" size="sm">
+                          {user.role}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="py-1">
+                      <Link
+                        to="/verify"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs text-[#5F6B76] hover:text-[#17202A] hover:bg-[#F8FAFC]"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-[#87919B]" />
+                        Verify Certificate
+                      </Link>
+                    </div>
+
+                    <div className="pt-1 border-t border-[#E5E7EB]">
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        disabled={loggingOut}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#B42318] hover:bg-[#FEE4E2]/30 transition-colors text-left cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
-            <div className="flex items-center space-x-2">
-              <Link
-                to="/register"
-                className="text-xs font-semibold text-slate-700 hover:text-[#0B2545] px-3.5 py-2 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition shadow-xs"
-              >
-                Register
-              </Link>
+            // Public Header Actions
+            <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="text-xs bg-[#0B2545] hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl shadow-sm hover:shadow transition flex items-center space-x-1.5 group"
+                className="text-xs font-semibold bg-[#1F4E79] text-white hover:bg-[#163A5C] px-3.5 py-1.5 rounded-[6px] transition-colors shadow-xs"
               >
-                <span>Sign In</span>
-                <ChevronRight className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-0.5 transition-transform" />
+                Sign In
               </Link>
+              {/* Mobile Public Navigation Toggle */}
+              <button
+                type="button"
+                onClick={() => setMobilePublicMenuOpen(!mobilePublicMenuOpen)}
+                className="p-1.5 text-[#5F6B76] hover:text-[#17202A] hover:bg-[#F1F3F6] rounded-[6px] md:hidden cursor-pointer"
+                aria-label="Toggle Public Menu"
+              >
+                {mobilePublicMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
             </div>
           )}
-
-          {/* Public Mobile Navigation Menu Toggle (For guest visitors) */}
-          {!user && (
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              className="p-2 lg:hidden text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
-              aria-label="Toggle Public Navigation Menu"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          )}
         </div>
-
       </div>
 
-      {/* Mobile Menu Drawer - White Theme */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-white text-slate-800 p-4 space-y-2 border-t border-slate-200 text-xs font-semibold shadow-xl animate-in slide-in-from-top-2">
+      {/* Mobile Public Navigation Dropdown */}
+      {!user && mobilePublicMenuOpen && (
+        <div className="md:hidden border-t border-[#E5E7EB] bg-white px-4 py-3 space-y-2.5 shadow-md">
           <Link
             to="/"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-2.5 px-3 rounded-xl hover:bg-slate-100"
+            onClick={handleHomeClick}
+            className={`w-full block py-1.5 text-xs transition-colors ${
+              location.pathname === '/' && !location.hash
+                ? 'text-[#1F4E79] font-bold'
+                : 'text-[#5F6B76] font-medium'
+            }`}
           >
             Home
           </Link>
-          <Link
-            to="/trainee/catalogue"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-2.5 px-3 rounded-xl hover:bg-slate-100 flex items-center space-x-2"
+          <button
+            type="button"
+            onClick={() => handlePublicNav('about')}
+            className="w-full text-left py-1.5 text-xs font-medium text-[#5F6B76] hover:text-[#1F4E79] transition-colors"
           >
-            <BookOpen className="w-4 h-4 text-blue-600" />
-            <span>Course Catalogue</span>
-          </Link>
+            About
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePublicNav('courses')}
+            className="w-full text-left py-1.5 text-xs font-medium text-[#5F6B76] hover:text-[#1F4E79] transition-colors"
+          >
+            Courses
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePublicNav('institutes')}
+            className="w-full text-left py-1.5 text-xs font-medium text-[#5F6B76] hover:text-[#1F4E79] transition-colors"
+          >
+            Institutes
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePublicNav('announcements')}
+            className="w-full text-left py-1.5 text-xs font-medium text-[#5F6B76] hover:text-[#1F4E79] transition-colors"
+          >
+            Announcements
+          </button>
           <Link
             to="/register-institute"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-2.5 px-3 rounded-xl text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200"
+            onClick={() => setMobilePublicMenuOpen(false)}
+            className="w-full flex items-center gap-1.5 py-1.5 text-xs font-medium text-[#5F6B76] hover:text-[#1F4E79]"
           >
-            Register Institute / Academy
+            <Building2 className="w-3.5 h-3.5 text-[#1F4E79]" />
+            <span>Register New Institute</span>
           </Link>
           <Link
             to="/verify"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-2.5 px-3 rounded-xl text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
+            onClick={() => setMobilePublicMenuOpen(false)}
+            className="w-full flex items-center gap-1.5 py-1.5 text-xs font-semibold text-[#1F4E79]"
           >
-            Verify Certificate (QR)
+            <FileCheck className="w-3.5 h-3.5" />
+            <span>Verify Certificate</span>
           </Link>
-          <Link
-            to="/pricing"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-2.5 px-3 rounded-xl text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 flex items-center space-x-2"
-          >
-            <CreditCard className="w-4 h-4 text-blue-600" />
-            <span>Plans & Pricing</span>
-          </Link>
-          <Link
-            to="/about"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block py-2.5 px-3 rounded-xl hover:bg-slate-100"
-          >
-            About MoES Framework
-          </Link>
+          <div className="pt-2 border-t border-[#E5E7EB]">
+            <Link
+              to="/login"
+              onClick={() => setMobilePublicMenuOpen(false)}
+              className="w-full block text-center py-2 text-xs font-semibold bg-[#1F4E79] text-white rounded-[6px]"
+            >
+              Sign In
+            </Link>
+          </div>
         </div>
       )}
     </header>

@@ -44,6 +44,7 @@ import CertificateGovernance from './pages/admin/CertificateGovernance';
 import AuditLogsCenter from './pages/admin/AuditLogsCenter';
 import InstitutionalDirectory from './pages/admin/InstitutionalDirectory';
 import GovernmentCertificateStudio from './pages/admin/GovernmentCertificateStudio';
+import ReportsPage from './pages/admin/ReportsPage';
 
 // Institute Admin Pages
 import InstituteDashboard from './pages/institute/InstituteDashboard';
@@ -125,7 +126,7 @@ function App() {
           id="main-content"
           className={`flex-1 h-full overflow-y-auto w-full ${['/', '/about', '/pricing', '/login', '/register', '/register-institute'].includes(location.pathname) ? 'p-0' : 'p-3.5 sm:p-6 lg:p-8'}`}
         >
-          <div className={['/login', '/register', '/register-institute', '/', '/about', '/pricing'].includes(location.pathname) ? 'w-full min-h-full flex flex-col' : 'max-w-7xl mx-auto pb-12'}>
+          <div className={['/login', '/register', '/register-institute', '/', '/about', '/pricing'].includes(location.pathname) ? 'w-full min-h-full flex flex-col' : 'max-w-[1440px] mx-auto pb-12'}>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
@@ -272,6 +273,11 @@ function App() {
                 <AuditLogsCenter />
               </ProtectedRoute>
             } />
+            <Route path="/institute/reports" element={
+              <ProtectedRoute allowedRoles={['institute_admin', 'org_admin', 'admin']}>
+                <ReportsPage />
+              </ProtectedRoute>
+            } />
 
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={
@@ -312,6 +318,11 @@ function App() {
             <Route path="/admin/audit-logs" element={
               <ProtectedRoute allowedRoles={['admin', 'institute_admin', 'org_admin']}>
                 <AuditLogsCenter />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/reports" element={
+              <ProtectedRoute allowedRoles={['admin', 'institute_admin', 'org_admin']}>
+                <ReportsPage />
               </ProtectedRoute>
             } />
             <Route path="/admin/institutes" element={

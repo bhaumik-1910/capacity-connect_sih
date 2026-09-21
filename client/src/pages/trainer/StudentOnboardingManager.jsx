@@ -377,7 +377,7 @@ const StudentOnboardingManager = () => {
             norm.mail ||
             '';
           const cleanEmail = (
-            rawEmail || `${cleanEnrollment.toLowerCase().replace(/[^a-z0-9]/g, '')}@imd.gov.in`
+            rawEmail || `${cleanEnrollment.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.ac.in`
           )
             .trim()
             .toLowerCase();
@@ -390,7 +390,7 @@ const StudentOnboardingManager = () => {
             norm.batch ||
             norm.stream ||
             norm.class ||
-            'Meteorological Operations';
+            '';
 
           // Institute / Organization
           const rawOrg =

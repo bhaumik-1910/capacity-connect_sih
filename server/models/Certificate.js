@@ -21,13 +21,13 @@ const certificateSchema = new mongoose.Schema({
   // Snapshotted fields at issuance
   studentName: { type: String, required: true },
   studentEmail: { type: String },
-  studentDesignation: { type: String, default: 'Meteorological Officer' },
-  studentDepartment: { type: String, default: 'Atmospheric Sciences' },
+  studentDesignation: { type: String, default: '' },
+  studentDepartment: { type: String, default: '' },
   
-  organizationName: { type: String, default: 'India Meteorological Department (IMD)' },
-  organizationLogo: { type: String, default: '/logo-imd.png' },
-  signatoryName: { type: String, default: 'Dr. M. Mohapatra' },
-  signatoryDesignation: { type: String, default: 'Director General of Meteorology, IMD' },
+  organizationName: { type: String, default: '' },
+  organizationLogo: { type: String, default: '' },
+  signatoryName: { type: String, default: '' },
+  signatoryDesignation: { type: String, default: '' },
 
   courseTitle: { type: String, required: true },
   courseCode: { type: String, required: true },

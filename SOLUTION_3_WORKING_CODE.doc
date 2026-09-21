@@ -1,0 +1,124 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Solution 3 - The Working Code (MVP)</title>
+<style>
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; line-height: 1.6; color: #1e293b; margin: 40px; }
+  h1 { color: #0f172a; border-bottom: 3px solid #2563eb; padding-bottom: 8px; font-size: 24pt; }
+  h2 { color: #1e40af; border-bottom: 1.5px solid #93c5fd; padding-bottom: 6px; margin-top: 26px; font-size: 16pt; }
+  h3 { color: #1e3a8a; margin-top: 18px; font-size: 13pt; }
+  p, li { font-size: 11pt; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 10pt; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+  th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; }
+  tr:nth-child(even) { background-color: #f8fafc; }
+  .callout { background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 11pt; }
+  code { background: #f1f5f9; color: #b91c1c; padding: 2px 5px; border-radius: 4px; font-family: Consolas, monospace; }
+  pre { background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 6px; font-family: Consolas, monospace; font-size: 9.5pt; }
+</style>
+</head>
+<body>
+
+<h1>Solution 3: The Working Code (MVP)</h1>
+<div class="callout">
+  <b>Project:</b> CapacityConnect — Digital Capacity Building & Competency Governance Portal<br>
+  <b>Required Deliverables:</b> Full-Stack Application Scaffold, Dependency Resolution, Third-Party Integrations (PDF Transcripts, QR Minting, Excel Ingestion), and Frontend-Backend Connectivity.
+</div>
+
+<h2>1. MVP Architecture & Scaffolding</h2>
+<p>The application is built with a decoupled Single Page Application architecture:</p>
+<ul>
+  <li><b>Client (React 18 + Vite):</b> Role-specific dashboards (Admin, Institute, Trainer, Trainee), Exam Arena with anti-cheat proctoring, Competency Passport radar visualization, and QR verification portal.</li>
+  <li><b>Server (Node.js + Express):</b> Multi-tenant REST APIs, JWT authentication with role scoping, AI trainer-competency recommendation engine, and Excel roster parser.</li>
+  <li><b>Database (MongoDB Atlas):</b> Document persistence with multi-tenant row-level indexing and SHA-256 certificate hashing.</li>
+</ul>
+
+<h2>2. Dependency Resolution Summary</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>Package</th>
+      <th>Version</th>
+      <th>Purpose & Resolution Rationale</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Frontend</td>
+      <td><code>jspdf</code> & <code>html2canvas</code></td>
+      <td>v4.2 / v1.4</td>
+      <td>Generates downloadable official transcripts and certificates in vector PDF format directly in the browser.</td>
+    </tr>
+    <tr>
+      <td>Frontend</td>
+      <td><code>qrcode.react</code></td>
+      <td>v3.1.0</td>
+      <td>Renders high-density QR verification codes linking directly to public verification endpoints.</td>
+    </tr>
+    <tr>
+      <td>Frontend</td>
+      <td><code>canvas-confetti</code></td>
+      <td>v1.9.3</td>
+      <td>Provides celebratory feedback animations upon exam completion and certificate acquisition.</td>
+    </tr>
+    <tr>
+      <td>Backend</td>
+      <td><code>bcryptjs</code></td>
+      <td>v2.4.3</td>
+      <td>Pure JS implementation preventing native C++ build failures on Windows while securing user passwords with 10 salt rounds.</td>
+    </tr>
+    <tr>
+      <td>Backend</td>
+      <td><code>multer</code></td>
+      <td>v2.3.0</td>
+      <td>Handles streaming file uploads for batch student roster spreadsheet ingestion.</td>
+    </tr>
+    <tr>
+      <td>Backend</td>
+      <td><code>helmet</code> & <code>cors</code></td>
+      <td>v7.1 / v2.8</td>
+      <td>Hardens HTTP response headers and prevents unauthorized cross-origin resource access.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Third-Party Integrations & External Data Handling</h2>
+<h3>3.1 Dynamic Transcript & Certificate Generation</h3>
+<p>The system uses client-side DOM-to-canvas rendering via <code>html2canvas</code> and <code>jsPDF</code> to generate high-resolution, vector-accurate certificates and academic transcripts without server-side headless browser memory costs.</p>
+
+<h3>3.2 Cryptographic QR Minting</h3>
+<pre>
+const generateCertificateHash = (traineeId, courseId, timestamp) => {
+  return crypto
+    .createHmac('sha256', process.env.JWT_SECRET)
+    .update(`${traineeId}:${courseId}:${timestamp}`)
+    .digest('hex');
+};
+</pre>
+<p>Each issued certificate receives a dynamic SHA-256 hash embedded into an SVG QR code pointing to <code>/verify/:certificateNumber</code>.</p>
+
+<h3>3.3 Bulk Excel Student Onboarding</h3>
+<p>Admins can upload an Excel (.xlsx) roster. The server parses student rows, checks for existing accounts, generates secure 6-digit access PINs, and creates accounts in a single atomic database batch.</p>
+
+<h2>4. Frontend-to-Backend Connectivity & Security</h2>
+<p>Frontend requests are routed through a centralized <code>apiFetch</code> utility in <code>client/src/services/api.js</code>:</p>
+<ul>
+  <li><b>Automatic Bearer Auth:</b> Automatically injects <code>Authorization: Bearer &lt;token&gt;</code> into headers.</li>
+  <li><b>Session Storage Isolation:</b> Stores active session tokens in <code>sessionStorage</code> so credentials expire as soon as the browser tab is closed.</li>
+  <li><b>Proctoring Integration:</b> The Exam Arena monitors <code>visibilitychange</code> and tab switches, sending tamper metrics alongside test submissions.</li>
+</ul>
+
+<h2>5. Quick Execution Guide</h2>
+<pre>
+# 1. Run Backend Server:
+cd server && npm install && npm run dev
+# Server active on http://localhost:5000
+
+# 2. Run Frontend Client:
+cd client && npm install && npm run dev
+# Frontend active on http://localhost:5173
+</pre>
+
+</body>
+</html>

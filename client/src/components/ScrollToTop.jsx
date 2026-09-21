@@ -8,17 +8,39 @@ import { ArrowUp } from 'lucide-react';
  * 2. Displays a floating "Back to Top" button when user scrolls down > 300px.
  */
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+  const location = useLocation();
   const [visible, setVisible] = useState(false);
 
-  // 1. Reset scroll to top on page / route transition
+  // Disable browser automatic scroll restoration so route transitions always start at top
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    const mainEl = document.getElementById('main-content');
-    if (mainEl) {
-      mainEl.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
     }
-  }, [pathname]);
+  }, []);
+
+  // 1. Reset scroll to top on page / route transition (both window and main scroll container)
+  useEffect(() => {
+    if (location.hash) return; // Allow hash scrolling if present (e.g., #courses)
+
+    const resetScroll = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const mainEl = document.getElementById('main-content');
+      if (mainEl) {
+        mainEl.scrollTop = 0;
+      }
+    };
+
+    resetScroll();
+    const rafId = requestAnimationFrame(resetScroll);
+    const timeoutId = setTimeout(resetScroll, 60);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
+    };
+  }, [location.pathname]);
 
   // 2. Track scroll position to show/hide floating button
   useEffect(() => {

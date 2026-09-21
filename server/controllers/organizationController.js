@@ -80,9 +80,9 @@ const registerOrganization = async (req, res) => {
       displayName: displayName || legalName,
       code: code.toUpperCase(),
       type: type || 'Autonomous Institute',
-      domain: domain || 'imd.gov.in',
-      website: website || 'https://mausam.imd.gov.in',
-      address: address || 'New Delhi, India',
+      domain: domain || '',
+      website: website || '',
+      address: address || '',
       contactPerson: contactPerson || {
         name: adminName,
         email: adminEmail,
@@ -90,24 +90,24 @@ const registerOrganization = async (req, res) => {
       },
       authorizedRepresentative: authorizedRepresentative || {
         name: adminName,
-        designation: signatoryDesignation || 'Authorized Registrar / Director',
+        designation: signatoryDesignation || '',
         email: adminEmail,
         phone: adminMobile || '',
         idProofUrl: 'https://uidai.gov.in/verified_id.pdf'
       },
       verificationDocuments: docs,
-      departments: departments && departments.length ? departments : ['Atmospheric Sciences', 'Radar Systems', 'Numerical Weather Prediction'],
-      programs: programs && programs.length ? programs : ['Executive Forecaster Certification', 'Radar Operation Diploma'],
-      batches: batches && batches.length ? batches : ['Batch 2026-A', 'Batch 2026-B'],
+      departments: departments && departments.length ? departments : [],
+      programs: programs && programs.length ? programs : [],
+      batches: batches && batches.length ? batches : [],
       signatory: {
-        name: signatoryName || 'Director General',
-        designation: signatoryDesignation || 'Head of Institute'
+        name: signatoryName || '',
+        designation: signatoryDesignation || ''
       },
       certificateTemplate: {
         orgDisplayName: displayName || legalName,
         logoUrl: '',
-        signatoryName: signatoryName || 'Director General',
-        signatoryDesignation: signatoryDesignation || 'Head of Institute',
+        signatoryName: signatoryName || '',
+        signatoryDesignation: signatoryDesignation || '',
         headerLine: 'National Digital Education Architecture (NDEAR) • MoES / IMD Accredited',
         minScoreForCertificate: 80,
         footerNote: 'Valid subject to verified national meteorological capacity building registry.',
@@ -133,7 +133,7 @@ const registerOrganization = async (req, res) => {
       organizationId: organization._id,
       organizationName: organization.legalName,
       department: 'Institutional Administration',
-      designation: signatoryDesignation || 'Institute Coordinator / Director',
+      designation: signatoryDesignation || 'Institute Coordinator',
       mobile: adminMobile || '',
       status: 'active',
       approvalStatus: 'pending' // Requires Platform Admin approval
@@ -415,39 +415,158 @@ const getInstituteMetrics = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Institute tenant not found' });
     }
 
+    const orgQuery = [{ organizationId: orgId }];
+    if (org.legalName) {
+      const escLegal = org.legalName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      orgQuery.push({ organizationName: new RegExp(`^${escLegal}$`, 'i') });
+    }
+    if (org.displayName && org.displayName !== org.legalName) {
+      const escDisplay = org.displayName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      orgQuery.push({ organizationName: new RegExp(`^${escDisplay}$`, 'i') });
+    }
+
+    const courseQuery = [{ organizationId: orgId }];
+    if (org.legalName) {
+      const escLegal = org.legalName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      courseQuery.push({ organizationName: new RegExp(`^${escLegal}$`, 'i') });
+    }
+    if (org.displayName && org.displayName !== org.legalName) {
+      const escDisplay = org.displayName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      courseQuery.push({ organizationName: new RegExp(`^${escDisplay}$`, 'i') });
+    }
+
     const [
-      totalStudents,
-      activeStudents,
-      pendingStudents,
-      totalTrainers,
-      activeTrainers,
-      totalCourses,
-      activeCourses,
+      students,
+      trainers,
+      courses,
       certificatesIssued,
-      certificatesRevoked,
-      sessionsCount
+      certificatesRevoked
     ] = await Promise.all([
-      User.countDocuments({ organizationId: orgId, role: { $in: ['student', 'trainee'] } }),
-      User.countDocuments({ organizationId: orgId, role: { $in: ['student', 'trainee'] }, status: 'active' }),
-      User.countDocuments({ organizationId: orgId, role: { $in: ['student', 'trainee'] }, approvalStatus: 'pending' }),
-      User.countDocuments({ organizationId: orgId, role: 'trainer' }),
-      User.countDocuments({ organizationId: orgId, role: 'trainer', status: 'active' }),
-      Course.countDocuments({ organizationId: orgId }),
-      Course.countDocuments({ organizationId: orgId, status: 'published' }),
-      Certificate.countDocuments({ organizationId: orgId, status: 'valid' }),
-      Certificate.countDocuments({ organizationId: orgId, status: 'revoked' }),
-      Session.countDocuments({ organizationId: orgId })
+      User.find({ $or: orgQuery, role: { $in: ['student', 'trainee'] } })
+        .select('_id name email enrollmentNumber department designation status approvalStatus createdAt')
+        .sort({ createdAt: -1 })
+        .lean(),
+      User.find({ $or: orgQuery, role: 'trainer' })
+        .select('_id name email department status')
+        .lean(),
+      Course.find({ $or: courseQuery })
+        .select('_id title code status enrollmentCount')
+        .lean(),
+      Certificate.countDocuments({
+        $or: [
+          { organizationId: orgId },
+          ...(org.legalName ? [{ organizationName: new RegExp(`^${org.legalName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }] : [])
+        ],
+        status: 'valid'
+      }),
+      Certificate.countDocuments({
+        $or: [
+          { organizationId: orgId },
+          ...(org.legalName ? [{ organizationName: new RegExp(`^${org.legalName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }] : [])
+        ],
+        status: 'revoked'
+      })
     ]);
 
-    // Average attendance for the institute
-    const enrollments = await Enrollment.find({ organizationId: orgId }).select('attendancePercentage progressPercentage assessmentPassed').lean();
+    const studentIds = students.map(s => s._id);
+    const courseIds = courses.map(c => c._id);
+
+    // Dynamic Calculations from Live Database Enrollments matching this institute's courses or students
+    const enrollmentQuery = [
+      { organizationId: orgId }
+    ];
+    if (studentIds.length > 0) {
+      enrollmentQuery.push({ traineeId: { $in: studentIds } });
+    }
+    if (courseIds.length > 0) {
+      enrollmentQuery.push({ courseId: { $in: courseIds } });
+    }
+
+    const enrollments = await Enrollment.find({ $or: enrollmentQuery })
+      .select('attendancePercentage progressPercentage assessmentPassed bestAssessmentScore traineeId courseId status updatedAt')
+      .lean();
+
+    const totalStudents = students.length;
+    const activeStudents = students.filter(s => s.status === 'active').length;
+    const pendingStudents = students.filter(s => s.approvalStatus === 'pending').length;
+
+    const totalTrainers = trainers.length;
+    const activeTrainers = trainers.filter(t => t.status === 'active').length;
+
+    const totalCourses = courses.length;
+    const activeCourses = courses.filter(c => c.status === 'published').length;
+
+    const totalEnrollments = enrollments.length;
+    const completedEnrollments = enrollments.filter(e => e.status === 'completed' || (e.progressPercentage || 0) >= 100);
+
     const avgAttendance = enrollments.length > 0 
-      ? Math.round(enrollments.reduce((acc, curr) => acc + (curr.attendancePercentage || 0), 0) / enrollments.length) 
-      : 94;
+      ? Number((enrollments.reduce((acc, curr) => acc + (curr.attendancePercentage || 0), 0) / enrollments.length).toFixed(1))
+      : 0;
 
     const avgCompletion = enrollments.length > 0 
-      ? Math.round(enrollments.reduce((acc, curr) => acc + (curr.progressPercentage || 0), 0) / enrollments.length) 
-      : 86;
+      ? Number((enrollments.reduce((acc, curr) => acc + (curr.progressPercentage || 0), 0) / enrollments.length).toFixed(1))
+      : 0;
+
+    const enrollmentsWithScores = enrollments.filter(e => (e.bestAssessmentScore || 0) > 0);
+    const avgAssessment = enrollmentsWithScores.length > 0
+      ? Number((enrollmentsWithScores.reduce((acc, curr) => acc + (curr.bestAssessmentScore || 0), 0) / enrollmentsWithScores.length).toFixed(1))
+      : 0;
+
+    const maxQuota = org.subscription?.maxStudentQuota || 1000;
+    const cohortCapacityPercent = maxQuota > 0 ? Math.min(100, Math.round((totalEnrollments / maxQuota) * 100)) : 0;
+
+    // Fetch real recent students with their dynamic live progress calculated from Enrollment collection
+    const recentStudentsList = students.slice(0, 5).map(st => {
+      const studentEnrs = enrollments.filter(e => String(e.traineeId) === String(st._id));
+      const studentProg = studentEnrs.length > 0
+        ? Math.round(studentEnrs.reduce((acc, e) => acc + (e.progressPercentage || 0), 0) / studentEnrs.length)
+        : 0;
+      const isCompleted = studentEnrs.some(e => e.status === 'completed' || (e.progressPercentage || 0) >= 100);
+      
+      return {
+        _id: st._id,
+        id: st.enrollmentNumber || `ST-${String(st._id).slice(-4).toUpperCase()}`,
+        name: st.name,
+        email: st.email,
+        program: st.department || '',
+        progress: `${studentProg}%`,
+        progressValue: studentProg,
+        status: isCompleted ? 'Completed' : (st.status === 'active' ? 'Active' : (st.status || 'Enrolled')),
+        coursesCount: studentEnrs.length
+      };
+    });
+
+    // Fetch live scheduled sessions for this institute
+    const sessionQuery = [
+      { organizationId: orgId }
+    ];
+    if (courseIds.length > 0) {
+      sessionQuery.push({ courseId: { $in: courseIds } });
+    }
+    if (trainers.length > 0) {
+      sessionQuery.push({ trainerId: { $in: trainers.map(t => t._id) } });
+    }
+    if (org.legalName) {
+      sessionQuery.push({ organizationName: new RegExp(`^${org.legalName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
+    }
+
+    const upcomingSessionsList = await Session.find({
+      $or: sessionQuery,
+      status: { $ne: 'Cancelled' },
+      scheduledDate: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+    })
+      .populate('courseId', 'title')
+      .sort({ scheduledDate: 1 })
+      .limit(5)
+      .lean();
+
+    const formattedSessions = upcomingSessionsList.map(sess => ({
+      _id: sess._id,
+      title: sess.title || sess.courseId?.title || '',
+      trainer: sess.trainerName || '',
+      date: sess.scheduledDate ? new Date(sess.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Scheduled',
+      time: sess.scheduledDate ? new Date(sess.scheduledDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '10:00 AM'
+    }));
 
     res.json({
       success: true,
@@ -470,9 +589,16 @@ const getInstituteMetrics = async (req, res) => {
         activeCourses,
         certificatesIssued,
         certificatesRevoked,
-        sessionsCount,
+        sessionsCount: upcomingSessionsList.length,
+        totalEnrollments,
+        completedEnrollmentsCount: completedEnrollments.length,
+        cohortCapacityPercent,
+        maxStudentQuota: maxQuota,
         avgAttendance,
-        avgCompletion
+        avgCompletion,
+        avgAssessment,
+        recentStudents: recentStudentsList,
+        upcomingSessions: formattedSessions
       }
     });
   } catch (error) {

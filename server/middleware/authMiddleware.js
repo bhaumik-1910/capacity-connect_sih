@@ -109,5 +109,21 @@ const enforceTenantIsolation = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, authorizeRoles, enforceTenantIsolation, normalizeRole };
+const optionalProtect = async (req, res, next) => {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'capacity_connect_gov_secure_key_2026_moes_imd');
+      const user = await User.findById(decoded.id).select('-password');
+      if (user && user.status === 'active') {
+        req.user = user;
+      }
+    } catch (error) {
+      // Continue without user if token expired/invalid
+    }
+  }
+  next();
+};
+
+module.exports = { protect, optionalProtect, authorizeRoles, enforceTenantIsolation, normalizeRole };
 

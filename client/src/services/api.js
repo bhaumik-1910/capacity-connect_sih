@@ -104,7 +104,13 @@ export const api = {
   matchTrainers: (payload) => apiFetch('/trainer-matching/match', { method: 'POST', body: JSON.stringify(payload) }),
 
   // Sessions & Attendance
-  getSessions: (courseId = '') => apiFetch(`/sessions${courseId ? `?courseId=${courseId}` : ''}`),
+  getSessions: (params = '') => {
+    if (!params) return apiFetch('/sessions');
+    if (typeof params === 'string' && params.includes('=')) {
+      return apiFetch(`/sessions?${params.replace(/^\?/, '')}`);
+    }
+    return apiFetch(`/sessions?courseId=${params}`);
+  },
   createSession: (data) => apiFetch('/sessions', { method: 'POST', body: JSON.stringify(data) }),
   markAttendance: (sessionId, attendanceList) => apiFetch(`/sessions/${sessionId}/attendance`, { method: 'PUT', body: JSON.stringify({ attendanceList }) }),
 

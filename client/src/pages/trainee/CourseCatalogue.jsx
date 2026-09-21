@@ -20,6 +20,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useToast } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 
 const CATEGORIES = [
   'All',
@@ -46,6 +47,8 @@ const CourseCatalogue = () => {
   const [selectedPaymentCourse, setSelectedPaymentCourse] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isInstituteStudent = Boolean(user?.organizationId);
 
   const fetchCourses = async () => {
     setLoading(true);
@@ -63,8 +66,13 @@ const CourseCatalogue = () => {
       if (courseRes.success) setCourses(courseRes.courses || []);
       if (enrRes.success) {
         setEnrollments(enrRes.enrollments || []);
-        setInstituteCourses(enrRes.instituteCourses || []);
-        if (enrRes.instituteName) setInstituteName(enrRes.instituteName);
+        if (isInstituteStudent) {
+          setInstituteCourses(enrRes.instituteCourses || []);
+          if (enrRes.instituteName) setInstituteName(enrRes.instituteName);
+        } else {
+          setInstituteCourses([]);
+          setInstituteName('');
+        }
       }
     } catch (err) {
       console.error('Error fetching catalogue:', err);
@@ -87,9 +95,9 @@ const CourseCatalogue = () => {
     try {
       const res = await api.enrollCourse(courseId);
       if (res.success) {
-        toast.success(res.enrollmentType === 'INSTITUTE_SPONSORED_FREE' 
-          ? 'Enrolled for Free (Covered by Campus Membership)!' 
-          : 'Successfully enrolled in course!');
+        toast.success(res.enrollmentType === 'GOV_SCHOLARSHIP'
+          ? 'Enrolled in Government Course (MoES Sponsored)!'
+          : 'Enrolled for Free (Covered by Campus Membership)!');
         navigate(`/trainee/course/${courseId}`);
       }
     } catch (err) {
@@ -98,7 +106,7 @@ const CourseCatalogue = () => {
         setSelectedPaymentCourse(targetCourse);
         setIsPaymentModalOpen(true);
       } else {
-        toast.error(err.message || 'Enrollment error', 'Enrollment Notice');
+        toast.error(err.message || 'Failed to enroll in course', 'Enrollment Notice');
       }
     } finally {
       setEnrollingId(null);
@@ -120,14 +128,20 @@ const CourseCatalogue = () => {
     )
   ];
 
-  // Filter courses by institute if active
-  const displayedCourses = onlyInstitute
+  // Filter courses by institute if active, and strictly isolate external students
+  const displayedCourses = onlyInstitute && isInstituteStudent
     ? courses.filter(c => {
         const isFromInst = (c.organizationName && instituteName && c.organizationName.toLowerCase().trim() === instituteName.toLowerCase().trim()) ||
           instituteCourses.some(ic => ic._id?.toString() === c._id?.toString());
         return isFromInst;
       })
-    : courses;
+    : courses.filter(c => {
+        if (!isInstituteStudent) {
+          // External student: ONLY Central Government / MoES / IMD courses
+          return c.isGovernmentCourse === true || !c.organizationId;
+        }
+        return true;
+      });
 
   return (
     <div className="space-y-6">
@@ -147,8 +161,8 @@ const CourseCatalogue = () => {
 
       {/* Search & Dynamic Filter Hub */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-4">
-        {/* Filter Source Tabs (All vs My Institute) */}
-        {instituteName && (
+        {/* Filter Source Tabs (All vs My Institute) - Only visible to genuine affiliated institute students */}
+        {isInstituteStudent && instituteName && (
           <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-xl w-fit">
             <button
               type="button"
@@ -354,12 +368,19 @@ const CourseCatalogue = () => {
                           <span className="font-semibold text-slate-800">{course.trainerName}</span>
                         </div>
                       </div>
-                      {course.organizationName && (
-                        <div className="flex items-center space-x-2 text-[11px] text-slate-500">
-                          <span className="text-slate-400">🏛️</span>
-                          <span className="truncate font-medium text-slate-600">{course.organizationName}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center space-x-1.5 text-[11px]">
+                        {course.isGovernmentCourse || !course.organizationId || course.organizationName?.toLowerCase().includes('imd') || course.organizationName?.toLowerCase().includes('moes') ? (
+                          <span className="text-[#1F4E79] font-bold bg-[#EAF2F8] px-2 py-0.5 rounded border border-[#D0E1F0] flex items-center gap-1">
+                            <span>🏛️</span>
+                            <span>Government of India · MoES / IMD</span>
+                          </span>
+                        ) : (
+                          <span className="text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                            <span>🏛️</span>
+                            <span>{course.organizationName || 'Affiliated Training Institute'}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

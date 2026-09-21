@@ -13,6 +13,7 @@ import {
   Globe,
   MapPin,
   ArrowRight,
+  ArrowLeft,
   Eye,
   EyeOff,
   AlertCircle,
@@ -88,6 +89,23 @@ const InstituteRegister = () => {
       
       <div className="max-w-3xl w-full my-auto py-4">
         
+        {/* Back to Home Navigation */}
+        <div className="mb-3">
+          <button
+            type="button"
+            onClick={() => {
+              const mainEl = document.getElementById('main-content');
+              if (mainEl) mainEl.scrollTop = 0;
+              window.scrollTo(0, 0);
+              navigate('/');
+            }}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1F4E79] hover:text-[#163A5C] bg-white px-3 py-1.5 rounded-[6px] border border-slate-200 hover:border-[#1F4E79] shadow-xs cursor-pointer transition-all group"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <span>Back to Home</span>
+          </button>
+        </div>
+
         {success ? (
           <div className="bg-white rounded-2xl border-2 border-emerald-500 p-6 sm:p-8 text-center space-y-3.5 shadow-xl animate-in zoom-in-95">
             <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto text-2xl shadow-xs">

@@ -86,8 +86,8 @@ const bulkImportStudents = async (req, res) => {
 
       // Email fallback if not provided in Excel
       const rawEmail = row.email || row.Email || '';
-      const cleanEmail = (rawEmail || `${enrollmentNumber.toLowerCase().replace(/[^a-z0-9]/g, '')}@imd.gov.in`).trim().toLowerCase();
-      const department = String(row.department || row.Department || 'Meteorological Operations').trim();
+      const cleanEmail = (rawEmail || `${enrollmentNumber.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.ac.in`).trim().toLowerCase();
+      const department = String(row.department || row.Department || '').trim();
       const isPlatformAdmin = req.user && (req.user.role === 'platform_super_admin' || req.user.role === 'platform_admin' || req.user.role === 'admin');
       const organizationName = (!isPlatformAdmin && req.user?.organizationName)
         ? req.user.organizationName
@@ -99,7 +99,7 @@ const bulkImportStudents = async (req, res) => {
             row.institution ||
             row.Institution ||
             req.user?.organizationName ||
-            'India Meteorological Department (IMD)'
+            ''
           ).trim();
       
       let rawMobile = row.mobile ?? row.Mobile ?? row.phone ?? '';
@@ -230,7 +230,7 @@ const createSingleStudent = async (req, res) => {
 
     const cleanEnrollment = String(enrollmentNumber).trim();
     const plainPassword = extractLast6DigitsPassword(cleanEnrollment);
-    const cleanEmail = (email || `${cleanEnrollment.toLowerCase().replace(/[^a-z0-9]/g, '')}@imd.gov.in`).trim().toLowerCase();
+    const cleanEmail = (email || `${cleanEnrollment.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.ac.in`).trim().toLowerCase();
 
     const isPlatformAdmin = req.user && (req.user.role === 'platform_super_admin' || req.user.role === 'platform_admin' || req.user.role === 'admin');
     const studentOrgId = (!isPlatformAdmin && req.user?.organizationId)
@@ -238,7 +238,7 @@ const createSingleStudent = async (req, res) => {
       : (organizationId || req.user?.organizationId || null);
     const studentOrgName = (!isPlatformAdmin && req.user?.organizationName)
       ? req.user.organizationName
-      : (organizationName || req.user?.organizationName || 'India Meteorological Department (IMD)');
+      : (organizationName || req.user?.organizationName || '');
 
     let user = await User.findOne({
       $or: [{ enrollmentNumber: cleanEnrollment }, { email: cleanEmail }]
@@ -270,8 +270,8 @@ const createSingleStudent = async (req, res) => {
         organizationId: studentOrgId,
         organizationName: studentOrgName,
         createdBy: req.user?._id || null,
-        department: department || 'Meteorological Operations',
-        designation: designation || 'Officer Trainee',
+        department: department || '',
+        designation: designation || 'Student',
         mobile: mobile || '',
         status: 'active',
         approvalStatus: 'approved'

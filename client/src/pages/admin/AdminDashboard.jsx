@@ -1,347 +1,292 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import AdminHeader from '../../components/AdminHeader';
 import {
-  Users,
-  Layers,
-  Award,
-  ShieldCheck,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  Cpu,
-  Sliders,
-  History,
-  ArrowRight,
-  Shield,
   Building2,
+  Users,
   GraduationCap,
-  Sparkles,
-  ExternalLink,
-  ChevronRight,
-  UserCheck,
-  FileCheck,
-  PlusCircle
+  BookOpen,
+  Award,
+  ArrowRight,
+  ShieldCheck,
+  History,
+  CheckCircle2,
+  AlertTriangle,
+  Plus,
 } from 'lucide-react';
+import {
+  Button,
+  StatCard,
+  Card,
+  PageHeader,
+  Badge,
+  DataTable,
+} from '../../components/design-system';
 
+/**
+ * Government Minimalism Platform Admin Dashboard (Section 24)
+ * Platform Overview, 5 clean KPI cards, Pending Verification section, Activity
+ */
 const AdminDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState(null);
+  const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [recentAudits, setRecentAudits] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMetrics = async () => {
+    const fetchAdminData = async () => {
       try {
-        const res = await api.getAdminMetrics();
-        if (res.success) {
-          setMetrics(res.metrics);
+        setLoading(true);
+        const [metricRes, approvalsRes, auditRes] = await Promise.allSettled([
+          api.getAdminMetrics(),
+          api.getPendingUsers ? api.getPendingUsers() : Promise.resolve({ success: true, users: [] }),
+          api.getAuditLogs ? api.getAuditLogs('limit=6') : Promise.resolve({ success: true, logs: [] }),
+        ]);
+
+        if (metricRes.status === 'fulfilled' && metricRes.value?.metrics) {
+          setMetrics(metricRes.value.metrics);
+        }
+
+        if (approvalsRes.status === 'fulfilled' && approvalsRes.value?.users) {
+          setPendingApprovals(approvalsRes.value.users.slice(0, 5));
+        } else {
+          setPendingApprovals([]);
+        }
+
+        if (auditRes.status === 'fulfilled' && auditRes.value?.logs) {
+          setRecentAudits(auditRes.value.logs.slice(0, 6));
         }
       } catch (err) {
-        console.error('Error fetching admin metrics:', err);
+        console.error('Error fetching admin data:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchMetrics();
+
+    fetchAdminData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[500px]">
-        <div className="flex flex-col items-center space-y-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#0B2545]" />
-          <span className="text-xs font-semibold text-slate-500">Loading Governance Command Center...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Calculate total enrollments for percentage calculation
-  const totalDomainEnrollments = (metrics?.categoryStats || []).reduce((acc, c) => acc + (c.enrollments || 0), 0) || 1;
+  // 5 Standard Platform KPI Cards (Section 24) - 100% Dynamic from MongoDB
+  const kpiData = [
+    {
+      title: 'Institutes',
+      value: metrics?.totalInstitutes ?? 0,
+      subtitle: `${metrics?.pendingInstituteApprovals ?? pendingApprovals.length} pending review`,
+      icon: Building2,
+    },
+    {
+      title: 'Students',
+      value: metrics?.totalTrainees ?? metrics?.totalUsers ?? 0,
+      subtitle: `${metrics?.completionRate ?? 0}% platform completion`,
+      icon: GraduationCap,
+    },
+    {
+      title: 'Trainers',
+      value: metrics?.totalTrainers ?? 0,
+      subtitle: 'Active faculty',
+      icon: Users,
+    },
+    {
+      title: 'Courses',
+      value: metrics?.totalCourses ?? 0,
+      subtitle: `${metrics?.activePublishedCourses ?? 0} published`,
+      icon: BookOpen,
+    },
+    {
+      title: 'Certificates',
+      value: metrics?.certificatesIssued ?? 0,
+      subtitle: `${metrics?.certificatesRevoked ?? 0} revoked`,
+      icon: Award,
+    },
+  ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-6">
       
-      {/* MoES Executive Authority Header */}
-      <AdminHeader
-        title="Central Governance Command Center"
-        subtitle="National capacity oversight, curriculum quality moderation, forecaster accreditation, and AI-weighted competency assignments across all IMD Regional Meteorological Centres."
-        badge="Ministry of Earth Sciences • Central Governance Cell"
+      {/* Page Header (Section 12 & 24) */}
+      <PageHeader
+        title="Platform Overview"
+        description="National capacity oversight, curriculum quality moderation, and institutional accreditation."
+        badge={<Badge variant="primary" size="sm">National Governance</Badge>}
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/admin/course-builder"
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition flex items-center space-x-1.5"
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/admin/user-approvals')}
             >
-              <PlusCircle className="w-3.5 h-3.5 text-slate-950" />
-              <span>+ Create Government Course</span>
-            </Link>
-            <Link
-              to="/admin/government-certificate"
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center space-x-1.5"
+              Review Pending Queue ({pendingApprovals.length})
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate('/admin/course-builder')}
+              icon={Plus}
             >
-              <Award className="w-3.5 h-3.5 text-amber-300" />
-              <span>Govt Certificate Studio</span>
-            </Link>
-            <Link
-              to="/admin/user-approvals"
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center space-x-1.5"
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Pending Queue ({metrics?.pendingApprovals || 0})</span>
-            </Link>
-            <Link
-              to="/admin/trainer-matching"
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/20 backdrop-blur-sm transition flex items-center space-x-1.5"
-            >
-              <Sliders className="w-3.5 h-3.5 text-amber-300" />
-              <span>Launch AI Matcher</span>
-            </Link>
+              Create Course
+            </Button>
           </div>
         }
       />
 
-      {/* Primary KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* KPI 1: Personnel */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs hover:shadow-md transition-all duration-300 hover:border-blue-300 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50/50 rounded-full blur-xl pointer-events-none" />
-          <div className="flex items-center justify-between relative z-10">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Personnel</p>
-              <h3 className="text-3xl font-black text-slate-900 mt-1">{metrics?.totalUsers || 0}</h3>
-              <div className="flex items-center space-x-1.5 mt-2">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-[11px] text-amber-700 font-bold">
-                  {metrics?.pendingApprovals || 0} pending verification
-                </span>
-              </div>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition">
-              <Users className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        {/* KPI 2: Curriculum Catalogue */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs hover:shadow-md transition-all duration-300 hover:border-emerald-300 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50/50 rounded-full blur-xl pointer-events-none" />
-          <div className="flex items-center justify-between relative z-10">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Curriculum Syllabi</p>
-              <h3 className="text-3xl font-black text-slate-900 mt-1">{metrics?.totalCourses || 0}</h3>
-              <div className="flex items-center space-x-1.5 mt-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-[11px] text-emerald-700 font-bold">
-                  {metrics?.activePublishedCourses || 0} published courses
-                </span>
-              </div>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition">
-              <Layers className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        {/* KPI 3: Completion Velocity */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs hover:shadow-md transition-all duration-300 hover:border-purple-300 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50/50 rounded-full blur-xl pointer-events-none" />
-          <div className="flex items-center justify-between relative z-10">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Completion Velocity</p>
-              <h3 className="text-3xl font-black text-purple-700 mt-1">{metrics?.completionRate || 0}%</h3>
-              <div className="flex items-center space-x-1.5 mt-2">
-                <span className="text-[11px] text-slate-500 font-semibold">
-                  {metrics?.completedEnrollments || 0} / {metrics?.totalEnrollments || 0} enrolled
-                </span>
-              </div>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:scale-105 transition">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        {/* KPI 4: Issued Credentials */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs hover:shadow-md transition-all duration-300 hover:border-amber-300 group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/50 rounded-full blur-xl pointer-events-none" />
-          <div className="flex items-center justify-between relative z-10">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Issued Credentials</p>
-              <h3 className="text-3xl font-black text-amber-600 mt-1">{metrics?.certificatesIssued || 0}</h3>
-              <div className="flex items-center space-x-1.5 mt-2">
-                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-[11px] text-slate-600 font-semibold">QR cryptographically verified</span>
-              </div>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition">
-              <Award className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
+      {/* 5 Minimalist KPI Cards (Section 14 & 24) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        {kpiData.map((kpi, idx) => (
+          <StatCard
+            key={idx}
+            title={kpi.title}
+            value={kpi.value}
+            subtitle={kpi.subtitle}
+            icon={kpi.icon}
+          />
+        ))}
       </div>
 
-      {/* Quick Governance Workflow Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Link
-          to="/admin/institutes"
-          className="p-4 bg-white hover:bg-blue-50/50 rounded-xl border border-slate-200 hover:border-blue-300 shadow-2xs transition group flex items-center space-x-3.5"
-        >
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition">
-            <Building2 className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-bold text-slate-900 text-xs flex items-center space-x-1">
-              <span>Affiliated Institutes</span>
-              <ChevronRight className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 transition" />
-            </div>
-            <p className="text-[11px] text-slate-500 truncate mt-0.5">Directory, faculty & dossiers</p>
-          </div>
-        </Link>
-
-        <Link
-          to="/admin/course-governance"
-          className="p-4 bg-white hover:bg-emerald-50/50 rounded-xl border border-slate-200 hover:border-emerald-300 shadow-2xs transition group flex items-center space-x-3.5"
-        >
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-bold text-slate-900 text-xs flex items-center space-x-1">
-              <span>Curriculum Moderation</span>
-              <ChevronRight className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 transition" />
-            </div>
-            <p className="text-[11px] text-slate-500 truncate mt-0.5">Publish syllabus & audit reviews</p>
-          </div>
-        </Link>
-
-        <Link
-          to="/admin/competency-framework"
-          className="p-4 bg-white hover:bg-purple-50/50 rounded-xl border border-slate-200 hover:border-purple-300 shadow-2xs transition group flex items-center space-x-3.5"
-        >
-          <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition">
-            <Cpu className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-bold text-slate-900 text-xs flex items-center space-x-1">
-              <span>Competency Matrix</span>
-              <ChevronRight className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 transition" />
-            </div>
-            <p className="text-[11px] text-slate-500 truncate mt-0.5">WMO-1083 taxonomy standards</p>
-          </div>
-        </Link>
-
-        <Link
-          to="/admin/certificates"
-          className="p-4 bg-white hover:bg-amber-50/50 rounded-xl border border-slate-200 hover:border-amber-300 shadow-2xs transition group flex items-center space-x-3.5"
-        >
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition">
-            <FileCheck className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="font-bold text-slate-900 text-xs flex items-center space-x-1">
-              <span>Credentials Registry</span>
-              <ChevronRight className="w-3 h-3 text-slate-400 group-hover:translate-x-0.5 transition" />
-            </div>
-            <p className="text-[11px] text-slate-500 truncate mt-0.5">Audit trail & revocations</p>
-          </div>
-        </Link>
-      </div>
-
-      {/* Two Column Section: Category Distribution & Recent Audit Logs */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Category Breakdown */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-2">
-              <Cpu className="w-4 h-4 text-blue-600" />
-              <span>MoES Scientific Domain Distribution</span>
-            </h3>
-            <span className="text-[11px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-md border border-blue-200/80">
-              {(metrics?.categoryStats || []).length} Disciplines
+      {/* IMPORTANT SECTION: Pending Institute Approvals (Section 24) */}
+      <div className="bg-white rounded-[8px] border border-[#E5E7EB] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#17202A] uppercase tracking-wider">
+              Pending Institute Approvals
             </span>
+            <Badge variant="warning" size="sm">
+              {pendingApprovals.length} Action Required
+            </Badge>
+          </div>
+          <Link
+            to="/admin/user-approvals"
+            className="text-xs font-semibold text-[#1F4E79] hover:underline flex items-center gap-1"
+          >
+            <span>View All Applications</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="divide-y divide-[#E5E7EB]">
+          {pendingApprovals.length === 0 ? (
+            <div className="p-6 text-center text-xs text-[#5F6B76]">
+              All submitted institute accreditation applications have been processed.
+            </div>
+          ) : (
+            pendingApprovals.map((inst, idx) => (
+              <div
+                key={inst.id || idx}
+                className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#F8FAFC] transition-colors"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-[#17202A]">
+                    {inst.name || inst.organizationName || inst.email}
+                  </div>
+                  <div className="text-xs text-[#5F6B76] mt-0.5 flex items-center gap-2">
+                    <span className="capitalize">{inst.role ? inst.role.replace('_', ' ') : (inst.state || 'Accredited Center')}</span>
+                    <span>·</span>
+                    <span className="text-[#87919B]">Submitted {inst.createdAt ? new Date(inst.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : (inst.submittedDate || 'Recently')}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => navigate('/admin/user-approvals')}
+                  >
+                    Review Dossier
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Grid: Course Statistics & Recent Platform Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        
+        {/* Course Statistics Card */}
+        <Card padding="default">
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#E5E7EB]">
+            <h3 className="text-sm font-bold text-[#17202A]">
+              Course Statistics by Domain
+            </h3>
+            <Link to="/admin/course-governance" className="text-xs text-[#1F4E79] hover:underline font-medium">
+              Manage Courses
+            </Link>
           </div>
 
           <div className="space-y-3">
-            {(metrics?.categoryStats || []).length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">No domain streams recorded yet.</p>
-            ) : (
-              (metrics?.categoryStats || []).map((cat, idx) => {
-                const percentage = Math.round(((cat.enrollments || 0) / totalDomainEnrollments) * 100);
-
+            {metrics?.categoryStats && metrics.categoryStats.length > 0 ? (
+              metrics.categoryStats.map((d, idx) => {
+                const total = metrics.totalCourses || 1;
+                const sharePercent = Math.round((d.count / total) * 100);
                 return (
-                  <div key={idx} className="p-3.5 bg-slate-50/80 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl text-xs space-y-2 transition">
-                    <div className="flex items-center justify-between font-bold">
-                      <span className="text-slate-900 font-semibold">{cat._id}</span>
-                      <div className="flex items-center space-x-2 font-mono text-[11px]">
-                        <span className="text-blue-700 font-bold">{cat.count} Courses</span>
-                        <span className="text-slate-300">•</span>
-                        <span className="text-slate-600">{cat.enrollments || 0} Trainees</span>
-                      </div>
-                    </div>
-                    {/* Visual Capacity Meter Bar */}
-                    <div className="w-full bg-slate-200/70 h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.max(percentage, 8)}%` }}
-                      />
+                  <div key={d._id || idx} className="flex items-center justify-between text-xs py-0.5">
+                    <span className="font-medium text-[#17202A]">{d._id || 'General Meteorology'}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-[#5F6B76]">{d.count} {d.count === 1 ? 'Course' : 'Courses'}</span>
+                      <span className="w-10 text-right text-[#87919B] font-mono">{sharePercent}%</span>
                     </div>
                   </div>
                 );
               })
+            ) : (
+              <div className="py-6 text-center text-xs text-[#87919B]">
+                No course domain statistics cataloged yet in the database.
+              </div>
             )}
           </div>
-        </div>
+        </Card>
 
-        {/* Real-time Audit Trail Ticker */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <h3 className="font-bold text-sm text-slate-900 flex items-center space-x-1.5">
-                <History className="w-4 h-4 text-amber-600" />
-                <span>Live Governance Audit Trail</span>
-              </h3>
-            </div>
-            <Link
-              to="/admin/audit-logs"
-              className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center space-x-1"
-            >
-              <span>View All Logs</span>
-              <ArrowRight className="w-3 h-3" />
+        {/* Audit & Compliance Activity */}
+        <Card padding="default">
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#E5E7EB]">
+            <h3 className="text-sm font-bold text-[#17202A]">
+              Audit Activity
+            </h3>
+            <Link to="/admin/audit-logs" className="text-xs text-[#1F4E79] hover:underline font-medium">
+              View Audit Log
             </Link>
           </div>
 
-          <div className="space-y-2.5">
-            {(metrics?.recentAuditLogs || []).length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">No recent audit records logged.</p>
-            ) : (
-              (metrics?.recentAuditLogs || []).slice(0, 5).map((log) => (
-                <div key={log._id} className="p-3 bg-slate-50/80 hover:bg-slate-100/80 rounded-xl border border-slate-200/80 text-xs space-y-1.5 transition">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-900 font-mono text-[11px] font-bold">
-                      {log.action}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                    </span>
+          <div className="space-y-3 text-xs">
+            {(() => {
+              const displayLogs = recentAudits.length > 0 ? recentAudits : (metrics?.recentAuditLogs || []);
+              if (displayLogs.length === 0) {
+                return (
+                  <div className="py-6 text-center text-xs text-[#87919B]">
+                    No system audit logs recorded yet.
                   </div>
-                  <div className="text-[11px] text-slate-500 flex items-center justify-between">
-                    <span>Actor: <strong className="text-slate-800">{log.actorName}</strong> ({log.actorRole})</span>
-                    <span className="font-mono text-[10px] bg-white px-2 py-0.5 rounded-md border text-slate-600 shadow-2xs font-semibold">
-                      {log.module}
-                    </span>
+                );
+              }
+              return displayLogs.slice(0, 5).map((log, idx) => {
+                const timeStr = log.timestamp
+                  ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : 'Recent';
+                const dateStr = log.timestamp
+                  ? new Date(log.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })
+                  : '';
+                const actorDisplay = log.actorName || log.actorEmail || 'System Engine';
+                return (
+                  <div key={log._id || idx} className="flex items-center justify-between py-1.5 border-b border-[#E5E7EB] last:border-b-0">
+                    <div className="min-w-0 pr-2">
+                      <div className="font-semibold text-[#17202A] flex items-center gap-1.5">
+                        <span className="font-mono text-[11px] text-[#1F4E79]">{log.action || 'ACTIVITY'}</span>
+                        <span className="text-[#87919B]">·</span>
+                        <span className="text-[#5F6B76] truncate max-w-[180px]">{log.targetName || log.module || 'Platform'}</span>
+                      </div>
+                      <div className="text-[11px] text-[#87919B] mt-0.5">{dateStr} {timeStr} by {actorDisplay}</div>
+                    </div>
+                    <Badge variant={log.status === 'failure' ? 'rejected' : 'approved'} size="sm">
+                      {log.status === 'failure' ? 'Failed' : 'Success'}
+                    </Badge>
                   </div>
-                </div>
-              ))
-            )}
+                );
+              });
+            })()}
           </div>
-        </div>
+        </Card>
 
       </div>
 

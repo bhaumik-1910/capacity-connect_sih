@@ -81,7 +81,7 @@ const TraineeAnalytics = () => {
       <TrainerHeader
         title="Trainee Performance & At-Risk Analytics"
         subtitle="Real-time cohort velocity tracking, progress monitoring, attendance benchmarks, and automated early intervention flags."
-        department={user?.department || 'Atmospheric Sciences'}
+        department={user?.department || ''}
         badge="Academic Gradebook"
         actions={
           <div className="flex items-center space-x-2">
@@ -215,7 +215,7 @@ const TraineeAnalytics = () => {
                     <td className="py-2.5 px-3 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
                         <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 font-black text-xs flex items-center justify-center border border-indigo-100 shrink-0">
-                          {learner.name?.charAt(0) || 'F'}
+                          {learner.name?.charAt(0) || '?'}
                         </div>
                         <div className="min-w-0">
                           <div className="font-bold text-slate-900 text-xs group-hover:text-indigo-900 transition truncate max-w-[130px] lg:max-w-[170px]">
@@ -226,8 +226,8 @@ const TraineeAnalytics = () => {
                       </div>
                     </td>
                     <td className="py-2.5 px-3 text-slate-600 whitespace-nowrap">
-                      <span className="truncate max-w-[120px] lg:max-w-[160px] block" title={learner.dept || 'Operational Meteorology'}>
-                        {learner.dept || 'Operational Meteorology'}
+                      <span className="truncate max-w-[120px] lg:max-w-[160px] block" title={learner.dept || '—'}>
+                        {learner.dept || '—'}
                       </span>
                     </td>
                     <td className="py-2.5 px-3 font-mono font-bold text-slate-700 whitespace-nowrap">

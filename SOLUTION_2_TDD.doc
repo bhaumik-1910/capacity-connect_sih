@@ -1,0 +1,198 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Solution 2 - Technical Design Document (TDD)</title>
+<style>
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; line-height: 1.6; color: #1e293b; margin: 40px; }
+  h1 { color: #0f172a; border-bottom: 3px solid #2563eb; padding-bottom: 8px; font-size: 24pt; }
+  h2 { color: #1e40af; border-bottom: 1.5px solid #93c5fd; padding-bottom: 6px; margin-top: 26px; font-size: 16pt; }
+  h3 { color: #1e3a8a; margin-top: 18px; font-size: 13pt; }
+  p, li { font-size: 11pt; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 10pt; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+  th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; }
+  tr:nth-child(even) { background-color: #f8fafc; }
+  .callout { background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 11pt; }
+  code { background: #f1f5f9; color: #b91c1c; padding: 2px 5px; border-radius: 4px; font-family: Consolas, monospace; }
+  pre { background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 6px; font-family: Consolas, monospace; font-size: 9.5pt; }
+</style>
+</head>
+<body>
+
+<h1>Solution 2: Technical Design Document (TDD)</h1>
+<div class="callout">
+  <b>Project:</b> CapacityConnect — Digital Capacity Building & Competency Governance Portal<br>
+  <b>Role:</b> Solution Architect (Acting under evaluation guidelines)<br>
+  <b>Required Sections:</b> Chosen Tech Stack, Comprehensive Database Schemas, and Complete JSON API Contracts.
+</div>
+
+<h2>1. Chosen Technology Stack & Justification</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Layer</th>
+      <th>Technology</th>
+      <th>Architectural Justification</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Frontend</b></td>
+      <td>React 18 + Vite + Tailwind CSS</td>
+      <td>Lightning-fast Single Page Application (SPA), responsive UI, modular component architecture, and sub-2 second bundle load.</td>
+    </tr>
+    <tr>
+      <td><b>Backend API</b></td>
+      <td>Node.js + Express.js</td>
+      <td>Event-driven non-blocking I/O for heavy concurrent requests, Excel bulk ingestion, and robust middleware pipelines.</td>
+    </tr>
+    <tr>
+      <td><b>Database</b></td>
+      <td>MongoDB Atlas + Mongoose</td>
+      <td>Flexible document store for nested course modules, quiz question banks, and rapid horizontal scaling.</td>
+    </tr>
+    <tr>
+      <td><b>Security & Auth</b></td>
+      <td>JWT + Bcrypt.js + Helmet</td>
+      <td>Stateless Bearer token authentication, 10-round salted password hashing, and HTTP security header hardening.</td>
+    </tr>
+    <tr>
+      <td><b>Testing</b></td>
+      <td>Playwright E2E Suite</td>
+      <td>Cross-browser automated test coverage for multi-role workflows, tenant isolation, and QR verification.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. Complete Database Schemas (Data Models)</h2>
+
+<h3>2.1 User Entity Schema (<code>models/User.js</code>)</h3>
+<pre>
+{
+  fullName: String (required),
+  email: String (required, unique, indexed),
+  passwordHash: String (required),
+  role: Enum ['platform_super_admin', 'institute_admin', 'trainer', 'trainee'],
+  organizationId: ObjectId (ref 'Organization', indexed),
+  department: String,
+  enrollmentId: String (sparse indexed),
+  competencies: [{ competencyName: String, score: Number, lastEvaluated: Date }]
+}
+</pre>
+
+<h3>2.2 Organization / Tenant Schema (<code>models/Organization.js</code>)</h3>
+<pre>
+{
+  name: String (required),
+  code: String (required, unique, uppercase), // e.g. 'IITM-PUNE'
+  type: Enum ['university', 'research_institute', 'regional_center', 'ministry_hq'],
+  location: { city: String, state: String, country: String },
+  isActive: Boolean (default true)
+}
+</pre>
+
+<h3>2.3 Course & Module Schema (<code>models/Course.js</code>)</h3>
+<pre>
+{
+  title: String (required),
+  courseCode: String (unique),
+  organizationId: ObjectId (ref 'Organization', indexed),
+  trainerId: ObjectId (ref 'User', indexed),
+  modules: [{ moduleNumber: Number, title: String, contentType: String, contentUrl: String }],
+  targetedCompetencies: [String]
+}
+</pre>
+
+<h3>2.4 Assessment & Anti-Cheat Schema (<code>models/Assessment.js</code>)</h3>
+<pre>
+{
+  courseId: ObjectId (ref 'Course', indexed),
+  title: String,
+  timeLimitMinutes: Number,
+  passPercentage: Number,
+  antiCheatConfig: { maxTabSwitchesAllowed: Number, lockdownMode: Boolean },
+  questions: [{ questionId: String, questionText: String, options: [String], correctOptionIndex: Number (select: false) }]
+}
+</pre>
+
+<h3>2.5 Certificate & Cryptographic QR Schema (<code>models/Certificate.js</code>)</h3>
+<pre>
+{
+  certificateNumber: String (unique, indexed),
+  traineeId: ObjectId (ref 'User'),
+  traineeName: String,
+  courseTitle: String,
+  organizationName: String,
+  issueDate: Date,
+  verificationHash: String (SHA-256 unique),
+  qrCodeUrl: String
+}
+</pre>
+
+<h2>3. RESTful API Endpoints & JSON Contracts</h2>
+
+<h3>3.1 Authentication: <code>POST /api/auth/login</code></h3>
+<p><b>Request Body:</b></p>
+<pre>
+{
+  "email": "trainer.sharma@iitm.ac.in",
+  "password": "Password@123"
+}
+</pre>
+<p><b>Response Body (200 OK):</b></p>
+<pre>
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "65b10acd12a34f001b987a01",
+    "fullName": "Dr. Rajesh Sharma",
+    "role": "trainer",
+    "organizationId": "65b10a2212a34f001b987999"
+  }
+}
+</pre>
+
+<h3>3.2 AI Trainer Matching: <code>POST /api/trainer-matching/recommend</code></h3>
+<p><b>Request Body:</b></p>
+<pre>
+{
+  "courseTitle": "Atmospheric Radar Systems",
+  "requiredCompetencies": ["Radar Meteorology", "Signal Processing"],
+  "targetOrganizationId": "65b10a2212a34f001b987999"
+}
+</pre>
+<p><b>Response Body (200 OK):</b></p>
+<pre>
+{
+  "success": true,
+  "recommendations": [
+    {
+      "trainerId": "65b10acd12a34f001b987a01",
+      "fullName": "Dr. Rajesh Sharma",
+      "matchScore": 94.5,
+      "breakdown": { "skillOverlap": 40.0, "experience": 23.5, "feedback": 18.0, "availability": 13.0 }
+    }
+  ]
+}
+</pre>
+
+<h3>3.3 Public QR Verification: <code>GET /api/certificates/verify/:certificateNumber</code></h3>
+<p><b>Response Body (200 OK):</b></p>
+<pre>
+{
+  "status": "AUTHENTIC",
+  "verified": true,
+  "certificate": {
+    "certificateNumber": "CERT-2026-88319",
+    "traineeName": "Priya V. Nair",
+    "courseTitle": "Doppler Weather Radar Interpretation",
+    "issuingInstitute": "IITM Pune",
+    "finalScore": "92%",
+    "verificationHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
+</pre>
+
+</body>
+</html>

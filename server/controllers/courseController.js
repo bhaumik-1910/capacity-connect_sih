@@ -8,22 +8,58 @@ const { resolveCompetencyIds } = require('./competencyController');
 // @route GET /api/v1/courses
 const getPublishedCourses = async (req, res) => {
   try {
-    const { category, level, search } = req.query;
-    const filter = { status: 'published' };
+    const { category, level, search, instituteOnly, excludeGovernment, organizationId } = req.query;
+    const conditions = [{ status: 'published' }];
+
+    const isPlatformAdmin = req.user && ['platform_admin', 'platform_super_admin', 'admin'].includes(req.user.role);
+    const hasOrg = req.user && Boolean(req.user.organizationId);
+
+    // 1. Institute admin or institute-only request: exclude government courses
+    if (excludeGovernment === 'true' || instituteOnly === 'true' || (req.user && (req.user.role === 'institute_admin' || req.user.role === 'org_admin'))) {
+      conditions.push({ isGovernmentCourse: { $ne: true } });
+      if (req.user?.organizationId) {
+        conditions.push({ organizationId: req.user.organizationId });
+      }
+    } else if (isPlatformAdmin) {
+      // 2. Platform Admins can see all courses across system
+      if (organizationId) {
+        conditions.push({ organizationId });
+      }
+    } else if (hasOrg && (req.user.role === 'trainee' || req.user.role === 'student')) {
+      // 3. Accredited Institute Student: Government courses + their own institute courses
+      conditions.push({
+        $or: [
+          { isGovernmentCourse: true },
+          { organizationId: null },
+          { organizationId: req.user.organizationId }
+        ]
+      });
+    } else {
+      // 4. External / Direct Public student OR unauthenticated guest:
+      // STRICT RULE: ONLY Central Government / MoES / IMD courses allowed!
+      // Institute-specific private courses are strictly hidden.
+      conditions.push({
+        isGovernmentCourse: true
+      });
+    }
 
     if (category && category !== 'All') {
-      filter.category = category;
+      conditions.push({ category });
     }
     if (level && level !== 'All') {
-      filter.level = level;
+      conditions.push({ level });
     }
     if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { code: { $regex: search, $options: 'i' } }
-      ];
+      conditions.push({
+        $or: [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } },
+          { code: { $regex: search, $options: 'i' } }
+        ]
+      });
     }
+
+    const filter = conditions.length === 1 ? conditions[0] : { $and: conditions };
 
     const courses = await Course.find(filter)
       .populate('trainerId', 'name email designation department')
@@ -71,11 +107,22 @@ const getCourseById = async (req, res) => {
         traineeId: req.user._id,
         courseId: course._id
       });
-      // Auto-create enrollment if trainee or student views course player
-      if (!userEnrollment && ['trainee', 'student', 'admin'].includes(req.user.role)) {
+      // Auto-create enrollment only if user is an affiliated institute student (or admin) and course is government-certified or own institute
+      const isPlatformAdmin = ['platform_super_admin', 'platform_admin', 'admin'].includes(req.user.role);
+      const isInstituteStudent = Boolean(req.user.organizationId) || isPlatformAdmin;
+      const isGovCourse = course.isGovernmentCourse === true || 
+                          course.isGovernmentFree === true || 
+                          !course.organizationId ||
+                          course.organizationName?.toLowerCase().includes('imd') || 
+                          course.organizationName?.toLowerCase().includes('moes');
+      const isOwnInstituteCourse = req.user.organizationId && course.organizationId && 
+                                   course.organizationId.toString() === req.user.organizationId.toString();
+
+      if (!userEnrollment && ['trainee', 'student', 'admin'].includes(req.user.role) && isInstituteStudent && (isGovCourse || isOwnInstituteCourse)) {
         userEnrollment = await Enrollment.create({
           traineeId: req.user._id,
           courseId: course._id,
+          organizationId: req.user.organizationId || null,
           progressPercentage: 0,
           completedModuleItems: [],
           status: 'in_progress',
@@ -120,6 +167,8 @@ const createCourse = async (req, res) => {
 
     const isAdmin = req.user.role === 'admin' || req.user.role === 'platform_admin' || req.user.role === 'platform_super_admin';
 
+    const isGovCourse = isAdmin || Boolean(req.body.isGovernmentCourse);
+
     const course = await Course.create({
       title,
       code: code.toUpperCase(),
@@ -132,8 +181,10 @@ const createCourse = async (req, res) => {
       durationHours: durationHours || 24,
       capacity: capacity || 100,
       trainerId: req.user._id,
-      trainerName: isAdmin ? (req.body.trainerName || req.user.name || 'Government Forecaster Cell (MoES)') : req.user.name,
-      organizationName: isAdmin ? 'Ministry of Earth Sciences (MoES) / IMD' : (req.user.organizationName || 'India Meteorological Department (IMD)'),
+      trainerName: isAdmin ? (req.body.trainerName || req.user.name || '') : req.user.name,
+      organizationName: isGovCourse ? 'Ministry of Earth Sciences (MoES) / IMD' : (req.user.organizationName || ''),
+      organizationId: isGovCourse ? null : (req.user.organizationId || null),
+      isGovernmentCourse: isGovCourse,
       competencyIds: safeCompetencyIds,
       modules: modules || [],
       status: status || 'published' // Default to published so all courses appear immediately in catalogue
@@ -195,13 +246,25 @@ const deleteCourse = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
+    const isOwner = course.trainerId && course.trainerId.toString() === req.user._id.toString();
+    const isPlatformAdmin = ['platform_admin', 'platform_super_admin', 'admin'].includes(req.user.role);
+    const isOrgAdmin = ['org_admin', 'institute_admin'].includes(req.user.role) &&
+      course.organizationId && req.user.organizationId &&
+      course.organizationId.toString() === req.user.organizationId.toString();
+
     // Verify trainer owns the course or user is admin
-    if (course.trainerId.toString() !== req.user._id.toString() && !['platform_admin', 'org_admin'].includes(req.user.role)) {
+    if (!isOwner && !isPlatformAdmin && !isOrgAdmin) {
       return res.status(403).json({ success: false, message: 'Unauthorized to delete this course' });
     }
 
     await Course.findByIdAndDelete(req.params.id);
     await Enrollment.deleteMany({ courseId: req.params.id });
+    try {
+      const Assessment = require('../models/Assessment');
+      await Assessment.deleteMany({ courseId: req.params.id });
+    } catch (e) {
+      // Ignored if model not present
+    }
 
     await logAuditEvent({
       actor: req.user,
@@ -220,7 +283,7 @@ const deleteCourse = async (req, res) => {
 // @route GET /api/v1/courses/trainer/my-courses
 const getTrainerCourses = async (req, res) => {
   try {
-    let courseQuery = { trainerId: req.user._id };
+    let courseQuery = { trainerId: req.user._id, isGovernmentCourse: { $ne: true } };
 
     if (req.user.role === 'institute_admin' || req.user.role === 'org_admin') {
       const orgQuery = [];
@@ -234,6 +297,7 @@ const getTrainerCourses = async (req, res) => {
       const trainerIds = instituteTrainers.map(t => t._id);
 
       courseQuery = {
+        isGovernmentCourse: { $ne: true },
         $or: [
           { trainerId: { $in: [...trainerIds, req.user._id] } },
           ...(req.user.organizationId ? [{ organizationId: req.user.organizationId }] : []),
@@ -282,57 +346,75 @@ const enrollCourse = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Course is not available for enrollment' });
     }
 
-    let enrollment = await Enrollment.findOne({ traineeId: req.user._id, courseId });
-    if (enrollment && enrollment.status !== 'dropped') {
-      return res.status(400).json({ success: false, message: 'Already enrolled in this course' });
-    }
+    const isPlatformAdmin = ['platform_super_admin', 'platform_admin', 'admin'].includes(req.user.role);
+    const isGovCourse = course.isGovernmentCourse === true || 
+                        course.isGovernmentFree === true || 
+                        !course.organizationId ||
+                        course.organizationName?.toLowerCase().includes('imd') || 
+                        course.organizationName?.toLowerCase().includes('moes');
+    const isOwnInstituteCourse = req.user.organizationId && course.organizationId && 
+                                 course.organizationId.toString() === req.user.organizationId.toString();
 
-    let enrollmentType = 'INSTITUTE_SPONSORED_FREE';
-
-    // DUAL-TIER PRICING & MEMBERSHIP VALIDATION:
-    if (course.isGovernmentFree) {
-      enrollmentType = 'GOV_SCHOLARSHIP';
-    } else if (req.user.organizationId) {
-      // Institute student: Check college subscription
+    // 1. TIER 1: Institute Students (100% Free Campus Membership Access)
+    if (req.user.organizationId) {
       const org = await Organization.findById(req.user.organizationId);
-      if (org && (org.subscription?.status === 'ACTIVE' || org.status === 'APPROVED')) {
-        enrollmentType = 'INSTITUTE_SPONSORED_FREE';
+      if (org && (org.status === 'APPROVED' || org.status === 'active' || org.subscription?.status === 'ACTIVE')) {
+        const enrollmentType = isGovCourse ? 'GOV_SCHOLARSHIP' : 'INSTITUTE_SPONSORED_FREE';
+        enrollment = await Enrollment.create({
+          traineeId: req.user._id,
+          courseId,
+          organizationId: req.user.organizationId,
+          enrollmentType,
+          status: 'enrolled',
+          progressPercentage: 0,
+          completedModuleItems: []
+        });
+
+        course.enrollmentCount = (course.enrollmentCount || 0) + 1;
+        await course.save();
+
+        await logAuditEvent({
+          actor: req.user,
+          action: 'COURSE_ENROLLED',
+          module: 'COURSES',
+          targetId: course._id,
+          targetName: course.title,
+          metadata: { enrollmentType }
+        });
+
+        return res.status(201).json({ success: true, enrollment, enrollmentType });
       }
-    } else if (course.individualPrice > 0 && req.user.role !== 'platform_admin' && req.user.role !== 'admin') {
-      // External / Independent student -> requires payment first
-      return res.status(402).json({
-        success: false,
-        paymentRequired: true,
-        message: `External Independent Certification: Please complete checkout (₹${course.individualPrice}) to unlock full course access & WMO certificate.`,
-        price: course.individualPrice,
-        currency: course.currency || 'INR',
-        courseId: course._id
-      });
     }
 
-    enrollment = await Enrollment.create({
-      traineeId: req.user._id,
-      courseId,
-      organizationId: req.user.organizationId || null,
-      enrollmentType,
-      status: 'enrolled',
-      progressPercentage: 0,
-      completedModuleItems: []
+    // 2. TIER 2: External / Independent Students
+    // If course is 100% free by government decree or user is admin
+    if (isPlatformAdmin || course.isGovernmentFree || course.individualPrice === 0) {
+      enrollment = await Enrollment.create({
+        traineeId: req.user._id,
+        courseId,
+        organizationId: null,
+        enrollmentType: 'GOV_SCHOLARSHIP',
+        status: 'enrolled',
+        progressPercentage: 0,
+        completedModuleItems: []
+      });
+
+      course.enrollmentCount = (course.enrollmentCount || 0) + 1;
+      await course.save();
+
+      return res.status(201).json({ success: true, enrollment, enrollmentType: 'GOV_SCHOLARSHIP' });
+    }
+
+    // External student must complete payment checkout for government certification
+    const individualPrice = course.individualPrice || 999;
+    return res.status(402).json({
+      success: false,
+      paymentRequired: true,
+      message: `External Independent Certification: Please complete checkout (₹${individualPrice}) to unlock full course curriculum & WMO certificate.`,
+      price: individualPrice,
+      currency: course.currency || 'INR',
+      courseId: course._id
     });
-
-    course.enrollmentCount = (course.enrollmentCount || 0) + 1;
-    await course.save();
-
-    await logAuditEvent({
-      actor: req.user,
-      action: 'COURSE_ENROLLED',
-      module: 'COURSES',
-      targetId: course._id,
-      targetName: course.title,
-      metadata: { enrollmentType }
-    });
-
-    res.status(201).json({ success: true, enrollment, enrollmentType });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -352,6 +434,7 @@ const updateModuleProgress = async (req, res) => {
       enrollment = new Enrollment({
         traineeId: req.user._id,
         courseId,
+        organizationId: req.user.organizationId || course.organizationId || null,
         progressPercentage: 0,
         completedModuleItems: [],
         status: 'in_progress',
@@ -359,6 +442,10 @@ const updateModuleProgress = async (req, res) => {
         lastAccessedAt: new Date()
       });
       await Course.findByIdAndUpdate(courseId, { $inc: { enrollmentCount: 1 } });
+    }
+
+    if (!enrollment.organizationId && (req.user.organizationId || course.organizationId)) {
+      enrollment.organizationId = req.user.organizationId || course.organizationId;
     }
 
     // Total items across all modules
@@ -375,9 +462,13 @@ const updateModuleProgress = async (req, res) => {
     const completedCount = enrollment.completedModuleItems.length;
     enrollment.progressPercentage = Math.min(100, Math.round((completedCount / totalItems) * 100));
 
-    if (enrollment.progressPercentage === 100 && enrollment.assessmentPassed) {
-      enrollment.status = 'completed';
-      enrollment.completedAt = new Date();
+    if (enrollment.progressPercentage === 100) {
+      if (!course.assessmentId || enrollment.assessmentPassed) {
+        enrollment.status = 'completed';
+        enrollment.completedAt = new Date();
+      } else {
+        enrollment.status = 'in_progress';
+      }
     } else {
       enrollment.status = 'in_progress';
     }
@@ -407,11 +498,10 @@ const getMyEnrollments = async (req, res) => {
       .map(e => e.courseId?._id ? String(e.courseId._id) : String(e.courseId))
       .filter(Boolean);
 
-    // Fetch courses created by trainee's institute/trainers
+    // Fetch courses created by trainee's institute/trainers only if user has an accredited organizationId
     let instituteCourses = [];
-    if (req.user.organizationId || req.user.organizationName) {
-      const orgQuery = [];
-      if (req.user.organizationId) orgQuery.push({ organizationId: req.user.organizationId });
+    if (req.user.organizationId) {
+      const orgQuery = [{ organizationId: req.user.organizationId }];
       if (req.user.organizationName) {
         const esc = req.user.organizationName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         orgQuery.push({ organizationName: new RegExp(`^${esc}$`, 'i') });
@@ -444,7 +534,7 @@ const getMyEnrollments = async (req, res) => {
       success: true,
       enrollments,
       instituteCourses,
-      instituteName: req.user.organizationName || 'My Institute'
+      instituteName: req.user.organizationId ? (req.user.organizationName || '') : ''
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -514,12 +604,12 @@ const getTraineeAnalytics = async (req, res) => {
       return {
         id: enr._id,
         traineeId: trainee._id,
-        name: trainee.name || 'Meteorologist Officer',
-        email: trainee.email || 'officer@imd.gov.in',
-        dept: trainee.department || 'Atmospheric Sciences',
-        organization: trainee.organizationName || 'India Meteorological Department',
-        course: course.code || 'RAD-201',
-        courseTitle: course.title || 'Meteorological Curriculum',
+        name: trainee.name || '',
+        email: trainee.email || '',
+        dept: trainee.department || '',
+        organization: trainee.organizationName || '',
+        course: course.code || '',
+        courseTitle: course.title || '',
         progress,
         score,
         attendance,
@@ -548,12 +638,12 @@ const getTraineeAnalytics = async (req, res) => {
           analytics.push({
             id: `stu_${stu._id}`,
             traineeId: stu._id,
-            name: stu.name,
-            email: stu.email,
-            dept: stu.department || 'General',
+            name: stu.name || '',
+            email: stu.email || '',
+            dept: stu.department || '',
             organization: stu.organizationName || req.user.organizationName || '',
-            course: 'Onboarded Cohort',
-            courseTitle: 'Institute Student Cohort',
+            course: '',
+            courseTitle: '',
             progress: 0,
             score: 0,
             attendance: 100,
@@ -656,13 +746,14 @@ const getCourseEnrollments = async (req, res) => {
       },
       enrollments: enrollments.map(e => ({
         id: e._id,
-        user: e.traineeId || {
-          name: 'Enrolled Trainee',
-          email: 'trainee@capacityconnect.gov.in',
-          organizationName: 'Independent Candidate',
-          department: 'General Atmospheric Studies',
-          designation: 'Open Learner'
-        },
+        user: e.traineeId ? {
+          _id: e.traineeId._id,
+          name: e.traineeId.name || '',
+          email: e.traineeId.email || '',
+          organizationName: e.traineeId.organizationName || '',
+          department: e.traineeId.department || '',
+          designation: e.traineeId.designation || ''
+        } : null,
         status: e.status === 'completed' || (e.progressPercentage || 0) >= 100 ? 'completed' : (((e.progressPercentage || 0) > 0) ? 'in_progress' : 'enrolled'),
         progressPercentage: e.progressPercentage || 0,
         completedItemsCount: (e.completedModuleItems || []).length,

@@ -28,9 +28,9 @@ const userSchema = new mongoose.Schema({
     ref: 'Organization',
     default: null 
   },
-  organizationName: { type: String, default: 'India Meteorological Department (IMD)' },
-  department: { type: String, default: 'Atmospheric Sciences' },
-  designation: { type: String, default: 'Scientific Officer' },
+  organizationName: { type: String, default: '' },
+  department: { type: String, default: '' },
+  designation: { type: String, default: '' },
   qualifications: [{ type: String }],
   experienceYears: { type: Number, default: 0 },
   bio: { type: String, default: '' },

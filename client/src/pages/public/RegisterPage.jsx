@@ -45,9 +45,9 @@ const RegisterPage = () => {
         name: formData.name.trim(),
         email: formData.email.trim(),
         password: formData.password,
-        organizationName: formData.organizationName.trim() || 'Independent Trainee',
-        department: formData.department.trim() || 'Atmospheric Sciences',
-        designation: 'Student / Officer Trainee',
+        organizationName: formData.organizationName.trim() || '',
+        department: formData.department.trim() || '',
+        designation: 'Student',
         mobile: formData.mobile.trim(),
         role: 'trainee'
       });

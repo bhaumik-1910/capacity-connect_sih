@@ -107,11 +107,11 @@ const QuestionBankManager = () => {
 
     const headers = ['Enrollment Number', 'Trainee Name', 'Email', 'Department', 'Organization', 'Submission Timestamp', 'Marks Obtained', 'Total Marks', 'Score Percentage', 'Outcome', 'Time Spent'];
     const rows = submissions.map((s) => [
-      `"${s.traineeId?.enrollmentNumber || 'N/A'}"`,
-      `"${(s.traineeName || s.traineeId?.name || 'Trainee').replace(/"/g, '""')}"`,
+      `"${s.traineeId?.enrollmentNumber || ''}"`,
+      `"${(s.traineeName || s.traineeId?.name || '').replace(/"/g, '""')}"`,
       `"${(s.traineeId?.email || '').replace(/"/g, '""')}"`,
-      `"${(s.traineeId?.department || 'Meteorological Operations').replace(/"/g, '""')}"`,
-      `"${(s.traineeId?.organizationName || 'IMD').replace(/"/g, '""')}"`,
+      `"${(s.traineeId?.department || '').replace(/"/g, '""')}"`,
+      `"${(s.traineeId?.organizationName || '').replace(/"/g, '""')}"`,
       `"${new Date(s.submittedAt || s.createdAt).toLocaleString('en-IN')}"`,
       s.scoreObtained,
       s.totalPossibleMarks,
@@ -1134,10 +1134,10 @@ const QuestionBankManager = () => {
                     </tr>
                   ) : (
                     filteredSubmissions.map((sub) => {
-                      const studentName = sub.traineeName || sub.traineeId?.name || 'Unknown Trainee';
+                      const studentName = sub.traineeName || sub.traineeId?.name || '—';
                       const studentEmail = sub.traineeId?.email || '';
-                      const studentEnrollment = sub.traineeId?.enrollmentNumber || 'N/A';
-                      const studentDept = sub.traineeId?.department || 'Meteorological Operations';
+                      const studentEnrollment = sub.traineeId?.enrollmentNumber || '—';
+                      const studentDept = sub.traineeId?.department || '—';
                       const dateStr = sub.submittedAt || sub.createdAt;
                       const formattedDate = dateStr
                         ? new Date(dateStr).toLocaleDateString('en-IN', {

@@ -1,0 +1,113 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Solution 1 - Functional Design Document (FDD)</title>
+<style>
+  body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; line-height: 1.6; color: #1e293b; margin: 40px; }
+  h1 { color: #0f172a; border-bottom: 3px solid #2563eb; padding-bottom: 8px; font-size: 24pt; }
+  h2 { color: #1e40af; border-bottom: 1.5px solid #93c5fd; padding-bottom: 6px; margin-top: 26px; font-size: 16pt; }
+  h3 { color: #1e3a8a; margin-top: 18px; font-size: 13pt; }
+  p, li { font-size: 11pt; }
+  .callout { background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: 11pt; }
+  .story-box { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; padding: 10px 14px; margin: 10px 0; }
+  .out-scope { background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; padding: 10px 14px; margin: 8px 0; }
+  code { background: #f1f5f9; color: #b91c1c; padding: 2px 5px; border-radius: 4px; font-family: Consolas, monospace; }
+  pre { background: #0f172a; color: #f8fafc; padding: 14px; border-radius: 8px; font-family: Consolas, monospace; font-size: 10pt; }
+</style>
+</head>
+<body>
+
+<h1>Solution 1: Functional Design Document (FDD)</h1>
+<div class="callout">
+  <b>Project:</b> CapacityConnect — Digital Capacity Building & Competency Governance Portal<br>
+  <b>Required Deliverables:</b> Core User Stories, Acceptance Criteria, Out-of-Scope Boundaries, and User Journey Flows.
+</div>
+
+<h2>1. Executive Summary & Project Purpose</h2>
+<p><b>CapacityConnect</b> is a centralized, multi-tenant digital capacity building and learning management portal designed to streamline organizational training, competency development, and knowledge sharing. It supports seamless training management across decentralized institutes, AI-assisted trainer allocation, anti-cheat assessments, and tamper-proof digital certificates.</p>
+
+<h2>2. Core User Personas & User Stories</h2>
+
+<h3>Persona 1: Central Platform Super Admin (Ministry / HQ Level)</h3>
+<div class="story-box">
+  <b>User Story 1.1:</b> <i>As a</i> Central Platform Super Admin, <i>I want to</i> view national training metrics, approve newly registered institutes, and monitor system-wide audit logs, <i>so that</i> I can maintain complete governance and quality control across all participating organizations.
+</div>
+<div class="story-box">
+  <b>User Story 1.2:</b> <i>As a</i> Central Platform Super Admin, <i>I want to</i> configure standardized national certificate templates and master competency taxonomies (e.g., NDEAR, WMO-258), <i>so that</i> all regional institutes adhere to uniform national training standards.
+</div>
+
+<h3>Persona 2: Institute Admin (University / Regional Center Level)</h3>
+<div class="story-box">
+  <b>User Story 2.1:</b> <i>As an</i> Institute Admin, <i>I want to</i> upload a single Excel/CSV roster containing hundreds of student records, <i>so that</i> I can register and issue login credentials to entire batches in seconds without manual data entry.
+</div>
+<div class="story-box">
+  <b>User Story 2.2:</b> <i>As an</i> Institute Admin, <i>I want to</i> organize departmental cohorts and assign faculty trainers, <i>so that</i> our campus operates independently without accessing other institutes' private data.
+</div>
+
+<h3>Persona 3: Faculty Trainer (Instructor / SME)</h3>
+<div class="story-box">
+  <b>User Story 3.1:</b> <i>As a</i> Faculty Trainer, <i>I want to</i> create modular courses with multimedia lessons and build timed question banks, <i>so that</i> learners have structured learning pathways with clear evaluation benchmarks.
+</div>
+<div class="story-box">
+  <b>User Story 3.2:</b> <i>As a</i> Faculty Trainer / Coordinator, <i>I want to</i> receive AI-generated recommendations for suitable trainers based on domain expertise and past ratings, <i>so that</i> training modules are led by the most qualified instructors.
+</div>
+
+<h3>Persona 4: Trainee / Officer (Student / Learner)</h3>
+<div class="story-box">
+  <b>User Story 4.1:</b> <i>As a</i> Trainee, <i>I want to</i> access my enrolled modules and take timed online assessments in a fair, secure arena, <i>so that</i> I can validate my knowledge and qualify for course completion.
+</div>
+<div class="story-box">
+  <b>User Story 4.2:</b> <i>As a</i> Trainee, <i>I want to</i> track my personal skill growth via a visual radar chart and download verified PDF certificates, <i>so that</i> I have verifiable proof of my competencies for career progression.
+</div>
+
+<h3>Persona 5: External Public / Verifier (Employer / Auditor)</h3>
+<div class="story-box">
+  <b>User Story 5.1:</b> <i>As an</i> External Employer or Auditor, <i>I want to</i> scan the QR code on any printed or digital certificate without logging in, <i>so that</i> I can immediately verify whether the credential is authentic, tampered with, or expired.
+</div>
+
+<h2>3. Detailed Acceptance Criteria</h2>
+<ul>
+  <li><b>Multi-Tenant RBAC:</b> The system must strictly enforce role-based route protection. Data queries must automatically scope records by <code>organizationId</code> to guarantee tenant isolation.</li>
+  <li><b>Batch Trainee Ingestion:</b> The system must ingest Excel/CSV files up to 10MB, detect duplicate emails, and auto-generate 6-digit access PINs within 5 seconds for 500 records.</li>
+  <li><b>Anti-Cheat Exam Arena:</b> The backend API must strip out correct answer keys before serving exams to trainees. The client interface must trigger warnings on window blur or tab switching, and auto-submit upon timer expiry.</li>
+  <li><b>Competency Passport:</b> Completed assessments must update individual competency vector scores in real-time, rendering an interactive Radar Chart.</li>
+  <li><b>Cryptographic QR Certificates:</b> Certificates must be generated with unique SHA-256 signatures. Scanning the live QR code must open a public verification page displaying authentic graduate metadata or a tamper warning.</li>
+</ul>
+
+<h2>4. Out-of-Scope Boundaries (v1.0 Release)</h2>
+<div class="out-scope">
+  <b>1. Native Mobile App Stores:</b> In scope is a fully responsive PWA. Native distribution via Google Play / Apple App Store is out of scope.
+</div>
+<div class="out-scope">
+  <b>2. Self-Hosted Video Conferencing:</b> Integration with Zoom / Google Meet / MS Teams links is supported; maintaining self-hosted WebRTC servers is out of scope.
+</div>
+<div class="out-scope">
+  <b>3. B2C Credit Card Checkout:</b> Organizational grant tracking is supported; direct commercial consumer payment gateways are out of scope.
+</div>
+<div class="out-scope">
+  <b>4. Biometric Continuous Webcam AI:</b> Tab-switch monitoring and timer lockdown are in scope; continuous webcam eye-tracking AI is out of scope.
+</div>
+<div class="out-scope">
+  <b>5. Legacy SCORM/Moodle Migration:</b> Standard Excel/CSV roster ingestion is supported; legacy binary SCORM 1.2 import is out of scope.
+</div>
+
+<h2>5. User Journey Flow</h2>
+<pre>
+1. CENTRAL ADMIN CONFIGURATION
+   └── Approves Institutes ➔ Sets National Competency Taxonomy
+
+2. INSTITUTE ADMIN ONBOARDING
+   └── Uploads Trainee Batch (Excel) ➔ System Generates Logins & PINs
+
+3. TRAINER COURSE AUTHORING
+   └── Authors Modules & Timed Quizzes ➔ AI Recommends Matching Trainers
+
+4. TRAINEE PARTICIPATION & EVALUATION
+   └── Studies Modules ➔ Takes Timed Anti-Cheat Exam ➔ Updates Competency Passport
+
+5. AUTOMATED CERTIFICATION & VERIFICATION
+   └── SHA-256 Hash Generated ➔ Certificate Issued with QR ➔ Public Instant Verification
+</pre>
+
+</body>
+</html>

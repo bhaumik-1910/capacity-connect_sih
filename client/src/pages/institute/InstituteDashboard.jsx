@@ -1,39 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/NotificationContext';
-import InstituteHeader from '../../components/InstituteHeader';
-import InstitutePlanSelector from '../../components/InstitutePlanSelector';
 import {
-  Building2,
-  Users,
   GraduationCap,
-  Award,
+  Users,
   BookOpen,
+  Award,
   Calendar,
-  CheckCircle2,
-  AlertCircle,
-  TrendingUp,
-  FileCheck,
-  UserPlus,
-  Layers,
-  Settings2,
-  RefreshCw,
-  Sparkles,
+  Clock,
   ArrowRight,
-  ShieldCheck,
-  Percent,
-  ChevronRight,
-  CreditCard
+  FileCheck,
+  Plus,
+  TrendingUp,
 } from 'lucide-react';
+import {
+  Button,
+  StatCard,
+  Card,
+  PageHeader,
+  Badge,
+  DataTable,
+} from '../../components/design-system';
 
+/**
+ * Government Minimalism Institute Dashboard (Section 23)
+ * Overview of institute's learning activities, 4 KPIs, structured logical sections
+ */
 const InstituteDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'subscription'
 
   const loadMetrics = async () => {
     setLoading(true);
@@ -43,7 +43,7 @@ const InstituteDashboard = () => {
         setData(res);
       }
     } catch (err) {
-      toast.error(err.message || 'Failed to load institute metrics');
+      console.error('Failed to load institute metrics:', err);
     } finally {
       setLoading(false);
     }
@@ -56,298 +56,293 @@ const InstituteDashboard = () => {
   const metrics = data?.metrics || {};
   const org = data?.organization || {};
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[450px]">
-        <div className="flex flex-col items-center space-y-3">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#064e3b]" />
-          <span className="text-xs font-semibold text-slate-500">Connecting to Institute Workspace...</span>
-        </div>
-      </div>
-    );
-  }
+  // 100% Dynamic values from live DB
+  const totalStudents = metrics.totalStudents ?? 0;
+  const totalTrainers = metrics.totalTrainers ?? 0;
+  const totalCourses = metrics.totalCourses ?? 0;
+  const certificatesIssued = metrics.certificatesIssued ?? 0;
+
+  const totalEnrollments = metrics.totalEnrollments ?? 0;
+  const avgCompletion = metrics.avgCompletion ?? 0;
+  const avgAttendance = metrics.avgAttendance ?? 0;
+  const avgAssessment = metrics.avgAssessment ?? 0;
+  const cohortCapacityPercent = metrics.cohortCapacityPercent ?? 0;
+
+  // 4 KPIs (Section 23)
+  const kpis = [
+    {
+      title: 'Students',
+      value: totalStudents,
+      change: `+${metrics.activeStudents ?? totalStudents} Active`,
+      changeType: 'positive',
+      subtitle: 'Enrolled under institute',
+      icon: GraduationCap,
+    },
+    {
+      title: 'Trainers',
+      value: totalTrainers,
+      subtitle: `${metrics.activeTrainers ?? totalTrainers} active faculty`,
+      icon: Users,
+    },
+    {
+      title: 'Courses',
+      value: totalCourses,
+      subtitle: `${metrics.activeCourses ?? totalCourses} published syllabi`,
+      icon: BookOpen,
+    },
+    {
+      title: 'Certificates',
+      value: certificatesIssued,
+      subtitle: 'Issued to date',
+      icon: Award,
+    },
+  ];
+
+  // Dynamic Recent Students list strictly from database
+  const displayStudents = Array.isArray(metrics.recentStudents) ? metrics.recentStudents : [];
+
+  // Dynamic Upcoming Sessions strictly from database
+  const displaySessions = Array.isArray(metrics.upcomingSessions) ? metrics.upcomingSessions : [];
 
   return (
-    <div className="space-y-6 pb-12 select-none max-w-7xl mx-auto animate-in fade-in duration-200">
+    <div className="space-y-6">
       
-      {/* 1. Government Institutional Authority Header */}
-      <InstituteHeader
-        title={org.displayName || org.legalName || 'Institute Administration'}
-        subtitle="Multi-tenant isolated dashboard for faculty assignment, trainee cohort supervision, accredited curriculum governance, and custom verifiable credentials."
-        orgCode={org.code || 'INST'}
-        badge="Ministry of Earth Sciences • Accredited Tenant"
+      {/* Header (Section 23) */}
+      <PageHeader
+        title="Institute Dashboard"
+        description="Overview of your institute's learning activities, faculty allocation, and credential issuance."
+        badge={
+          <Badge variant="primary" size="sm">
+            {org.displayName || org.legalName || 'Accredited Center'}
+          </Badge>
+        }
         actions={
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={loadMetrics}
-              disabled={loading}
-              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition flex items-center space-x-1.5 text-xs font-semibold backdrop-blur-sm cursor-pointer"
-              title="Refresh KPIs"
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate('/institute/certificate-template')}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-amber-300' : ''}`} />
-              <span className="hidden sm:inline">Refresh Data</span>
-            </button>
-
-            <Link
-              to="/institute/certificate-template"
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition flex items-center space-x-1.5 shadow-sm"
+              Certificate Designer
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate('/institute/students')}
+              icon={Plus}
             >
-              <Award className="w-4 h-4" />
-              <span>Certificate Designer</span>
-            </Link>
+              Add Student
+            </Button>
           </div>
         }
       />
 
-      {/* Verification Status Alert Strip */}
-      <div className="p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="font-bold text-emerald-950">Accreditation Clearance: </span>
-            <span className="text-emerald-700 font-black uppercase">
-              {org.status === 'APPROVED' || org.status === 'active' ? 'VERIFIED NATIONAL TENANT' : (org.status || 'ACTIVE')}
-            </span>
-            <span className="text-slate-600 block sm:inline sm:ml-2">
-              • Strict server-side multi-tenant data isolation enforced for all learner cohorts & faculty records.
-            </span>
-          </div>
-        </div>
-        <div className="text-[11px] font-mono text-emerald-900 bg-white/80 px-3 py-1 rounded-lg border border-emerald-200 self-start sm:self-auto font-bold">
-          Passing Threshold: <strong>{org.certificateTemplate?.minScoreForCertificate ?? 80}%</strong>
-        </div>
+      {/* 4 KPI Cards (Section 14 & 23) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {kpis.map((kpi, idx) => (
+          <StatCard
+            key={idx}
+            title={kpi.title}
+            value={kpi.value}
+            change={kpi.change}
+            changeType={kpi.changeType}
+            subtitle={kpi.subtitle}
+            icon={kpi.icon}
+          />
+        ))}
       </div>
 
-      {/* Workspace Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            activeTab === 'overview'
-              ? 'bg-[#064e3b] text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <Building2 className="w-4 h-4" />
-          <span>Campus Performance & Overview</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('subscription')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
-            activeTab === 'subscription'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <CreditCard className="w-4 h-4" />
-          <span>Student Quota & Membership Plans (1,000 Seats)</span>
-          <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-400 text-slate-950 font-black">
-            B2B SaaS
-          </span>
-        </button>
-      </div>
-
-      {activeTab === 'subscription' ? (
-        <InstitutePlanSelector onActivated={loadMetrics} />
-      ) : (
-        <>
-      {/* 2. Key Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Logical Section: Enrollment & Performance Analytics Overview (100% Dynamic from DB) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        {/* Metric 1: Trainees */}
-        <div className="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all hover:border-blue-300 relative overflow-hidden group">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Trainees Enrolled</span>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-xs">
-              <GraduationCap className="w-5 h-5" />
-            </div>
+        {/* Card 1: Dynamic Enrollment Overview */}
+        <Card padding="default">
+          <div className="text-xs font-semibold text-[#5F6B76] uppercase">Enrollment Overview</div>
+          <div className="text-2xl font-bold text-[#17202A] mt-1">
+            {totalEnrollments.toLocaleString('en-IN')}
           </div>
-          <div className="text-3xl font-black text-slate-900 mt-2">
-            {metrics.totalStudents ?? 0}
+          <div className="text-xs text-[#5F6B76] mt-2">Active cohort capacity: {cohortCapacityPercent}%</div>
+          <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-[#1F4E79] h-full rounded-full transition-all duration-300" style={{ width: `${cohortCapacityPercent}%` }} />
           </div>
-          <div className="text-[11px] text-slate-500 flex items-center space-x-1.5 mt-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-emerald-700 font-bold">{metrics.activeStudents ?? 0} active</span>
-            <span className="text-slate-300">•</span>
-            <span>{metrics.pendingStudents ?? 0} pending</span>
-          </div>
-        </div>
+        </Card>
 
-        {/* Metric 2: Faculty */}
-        <div className="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all hover:border-indigo-300 relative overflow-hidden group">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Faculty & Trainers</span>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-xs">
-              <Users className="w-5 h-5" />
-            </div>
+        {/* Card 2: Dynamic Course Completion Rate */}
+        <Card padding="default">
+          <div className="text-xs font-semibold text-[#5F6B76] uppercase">Course Completion</div>
+          <div className="text-2xl font-bold text-[#1F7A4D] mt-1">
+            {avgCompletion}%
           </div>
-          <div className="text-3xl font-black text-indigo-900 mt-2">
-            {metrics.totalTrainers ?? 0}
+          <div className="text-xs text-[#5F6B76] mt-2">Completed on-schedule</div>
+          <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-[#1F7A4D] h-full rounded-full transition-all duration-300" style={{ width: `${Math.min(100, avgCompletion)}%` }} />
           </div>
-          <div className="text-[11px] text-slate-500 mt-2">
-            <span className="text-indigo-600 font-bold">{metrics.activeTrainers ?? 0} certified instructors</span>
-          </div>
-        </div>
+        </Card>
 
-        {/* Metric 3: Courses */}
-        <div className="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all hover:border-amber-300 relative overflow-hidden group">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Accredited Syllabi</span>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-xs">
-              <BookOpen className="w-5 h-5" />
-            </div>
+        {/* Card 3: Dynamic Session Attendance Rate */}
+        <Card padding="default">
+          <div className="text-xs font-semibold text-[#5F6B76] uppercase">Session Attendance</div>
+          <div className="text-2xl font-bold text-[#17202A] mt-1">
+            {avgAttendance}%
           </div>
-          <div className="text-3xl font-black text-slate-900 mt-2">
-            {metrics.totalCourses ?? 0}
+          <div className="text-xs text-[#5F6B76] mt-2">Minimum threshold: 80%</div>
+          <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-[#1F4E79] h-full rounded-full transition-all duration-300" style={{ width: `${Math.min(100, avgAttendance)}%` }} />
           </div>
-          <div className="text-[11px] text-slate-500 mt-2">
-            <span className="text-emerald-600 font-bold">{metrics.activeCourses ?? 0} published modules</span>
-          </div>
-        </div>
+        </Card>
 
-        {/* Metric 4: Certificates Issued */}
-        <div className="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all hover:border-emerald-300 relative overflow-hidden group">
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Certificates Awarded</span>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-xs">
-              <Award className="w-5 h-5" />
-            </div>
+        {/* Card 4: Dynamic Assessment Average */}
+        <Card padding="default">
+          <div className="text-xs font-semibold text-[#5F6B76] uppercase">Assessment Average</div>
+          <div className="text-2xl font-bold text-[#17202A] mt-1">
+            {avgAssessment}%
           </div>
-          <div className="text-3xl font-black text-emerald-900 mt-2">
-            {metrics.certificatesIssued ?? 0}
+          <div className="text-xs text-[#1F7A4D] font-medium mt-2">
+            {avgAssessment >= 80 ? 'Meets 80% passing rule' : 'Below 80% threshold'}
           </div>
-          <div className="text-[11px] text-slate-500 mt-2">
-            <span className="text-emerald-700 font-semibold">QR cryptographically validated</span>
+          <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-[#1F7A4D] h-full rounded-full transition-all duration-300" style={{ width: `${Math.min(100, avgAssessment)}%` }} />
           </div>
-        </div>
+        </Card>
 
       </div>
 
-      {/* 3. Performance & Completion Rates */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Institute Average Attendance
+      {/* Logical Section: Recent Students & Upcoming Sessions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        
+        {/* Recent Students Table (Section 23 & 27) */}
+        <div className="lg:col-span-2 bg-white rounded-[8px] border border-[#E5E7EB] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-[#E5E7EB] bg-[#F8FAFC] flex items-center justify-between">
+            <span className="text-xs font-bold text-[#17202A] uppercase tracking-wider">
+              Recent Students
             </span>
-            <span className="text-base font-black text-blue-700 font-mono">
-              {metrics.avgAttendance ?? 94}%
-            </span>
+            <Link
+              to="/institute/students"
+              className="text-xs font-semibold text-[#1F4E79] hover:underline flex items-center gap-1"
+            >
+              <span>View Roster</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all duration-500" 
-              style={{ width: `${metrics.avgAttendance ?? 94}%` }} 
-            />
-          </div>
-          <p className="text-[11px] text-slate-500 leading-relaxed">
-            Synchronous session attendance records logged across virtual classes and physical radar/telemetry laboratories.
-          </p>
+
+          {displayStudents.length === 0 ? (
+            <div className="p-8 text-center text-xs">
+              <GraduationCap className="w-8 h-8 text-[#94A3B8] mx-auto mb-2" />
+              <p className="font-semibold text-[#17202A]">No Student Enrollments Found</p>
+              <p className="text-[#5F6B76] mt-1 max-w-sm mx-auto">
+                Student records and live syllabus progress will automatically appear here once students are enrolled in courses.
+              </p>
+              <div className="mt-3">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => navigate('/institute/students')}
+                >
+                  Go to Student Roster
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-[#E5E7EB] text-[#5F6B76]">
+                    <th className="px-4 py-2.5 font-semibold">Student ID</th>
+                    <th className="px-4 py-2.5 font-semibold">Name</th>
+                    <th className="px-4 py-2.5 font-semibold">Program</th>
+                    <th className="px-4 py-2.5 font-semibold">Progress</th>
+                    <th className="px-4 py-2.5 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E5E7EB] text-[#17202A]">
+                  {displayStudents.map((st) => (
+                    <tr key={st.id || st._id} className="hover:bg-[#F8FAFC]">
+                      <td className="px-4 py-3 font-mono text-[#5F6B76]">{st.id}</td>
+                      <td className="px-4 py-3 font-semibold">{st.name}</td>
+                      <td className="px-4 py-3 text-[#5F6B76]">{st.program}</td>
+                      <td className="px-4 py-3 font-mono font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>{st.progress}</span>
+                          <div className="w-16 bg-[#E5E7EB] h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-[#1F4E79] h-full rounded-full"
+                              style={{ width: `${Math.min(100, st.progressValue || parseInt(st.progress) || 0)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={st.status === 'Completed' ? 'approved' : 'info'} size="sm">
+                          {st.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Curriculum Completion Benchmark
-            </span>
-            <span className="text-base font-black text-emerald-700 font-mono">
-              {metrics.avgCompletion ?? 86}%
-            </span>
+        {/* Upcoming Training Sessions (Section 23) */}
+        <Card padding="default" className="flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#E5E7EB]">
+              <span className="text-xs font-bold text-[#17202A] uppercase tracking-wider">
+                Upcoming Sessions
+              </span>
+              <Link to="/institute/attendance" className="text-xs text-[#1F4E79] hover:underline">
+                Calendar
+              </Link>
+            </div>
+
+            {displaySessions.length === 0 ? (
+              <div className="p-6 text-center text-xs">
+                <Calendar className="w-7 h-7 text-[#94A3B8] mx-auto mb-2" />
+                <p className="font-semibold text-[#17202A]">No Sessions Scheduled</p>
+                <p className="text-[#5F6B76] mt-1 text-[11px]">
+                  Scheduled webinars, lab sessions, and NWP modeling workshops will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3.5 text-xs">
+                {displaySessions.map((session, idx) => (
+                  <div key={session._id || idx} className="p-3 bg-[#F8FAFC] rounded-[6px] border border-[#E5E7EB]">
+                    <div className="font-semibold text-[#17202A] mb-1">
+                      {session.title}
+                    </div>
+                    <div className="text-[#5F6B76] text-[11px] mb-2">
+                      Faculty: {session.trainer}
+                    </div>
+                    <div className="flex items-center justify-between text-[#87919B] text-[11px] pt-1.5 border-t border-[#E5E7EB]">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>{session.date}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{session.time}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full transition-all duration-500" 
-              style={{ width: `${metrics.avgCompletion ?? 86}%` }} 
-            />
+
+          <div className="pt-4 mt-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              onClick={() => navigate('/institute/attendance')}
+            >
+              Session Schedule & Attendance
+            </Button>
           </div>
-          <p className="text-[11px] text-slate-500 leading-relaxed">
-            Proportion of enrolled trainees satisfying all competency milestones and qualifying the proctored assessment threshold.
-          </p>
-        </div>
+        </Card>
+
       </div>
-
-      {/* 4. Quick Action Operational Hub */}
-      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-5">
-        <div>
-          <h2 className="text-base font-bold text-slate-900">Institute Administrative Operations</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Quick administrative shortcuts to manage this academy's departments, faculty, cohorts, and branded credentials</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-          <Link
-            to="/institute/students"
-            className="p-5 bg-slate-50/70 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 rounded-2xl transition group flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold mb-3 group-hover:scale-105 transition shadow-2xs">
-                <UserPlus className="w-5 h-5" />
-              </div>
-              <div className="font-bold text-slate-900 text-sm">Student Cohorts</div>
-              <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">Single & Excel bulk enrollment with instant auto-credentials.</p>
-            </div>
-            <div className="mt-4 flex items-center text-blue-700 font-bold text-[11px] space-x-1">
-              <span>Manage Cohorts</span>
-              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
-            </div>
-          </Link>
-
-          <Link
-            to="/institute/trainers"
-            className="p-5 bg-slate-50/70 hover:bg-indigo-50/60 border border-slate-200 hover:border-indigo-300 rounded-2xl transition group flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold mb-3 group-hover:scale-105 transition shadow-2xs">
-                <Users className="w-5 h-5" />
-              </div>
-              <div className="font-bold text-slate-900 text-sm">Faculty Management</div>
-              <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">Assign trainers to subjects, view workload, and credential status.</p>
-            </div>
-            <div className="mt-4 flex items-center text-indigo-700 font-bold text-[11px] space-x-1">
-              <span>Manage Faculty</span>
-              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
-            </div>
-          </Link>
-
-          <Link
-            to="/institute/academic-structure"
-            className="p-5 bg-slate-50/70 hover:bg-purple-50/60 border border-slate-200 hover:border-purple-300 rounded-2xl transition group flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold mb-3 group-hover:scale-105 transition shadow-2xs">
-                <Layers className="w-5 h-5" />
-              </div>
-              <div className="font-bold text-slate-900 text-sm">Academic Structure</div>
-              <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">Configure institute departments, training programs, and cohorts.</p>
-            </div>
-            <div className="mt-4 flex items-center text-purple-700 font-bold text-[11px] space-x-1">
-              <span>Configure Hierarchy</span>
-              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
-            </div>
-          </Link>
-
-          <Link
-            to="/institute/certificate-template"
-            className="p-5 bg-slate-50/70 hover:bg-amber-50/60 border border-slate-200 hover:border-amber-300 rounded-2xl transition group flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold mb-3 group-hover:scale-105 transition shadow-2xs">
-                <Award className="w-5 h-5" />
-              </div>
-              <div className="font-bold text-slate-900 text-sm">Certificate Studio</div>
-              <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">Custom institute logo, seal, signatory, and 80% passing threshold.</p>
-            </div>
-            <div className="mt-4 flex items-center text-amber-700 font-bold text-[11px] space-x-1">
-              <span>Customize Design</span>
-              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
-            </div>
-          </Link>
-        </div>
-      </div>
-      </>
-      )}
 
     </div>
   );

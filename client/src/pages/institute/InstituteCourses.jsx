@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/NotificationContext';
+import { useToast, useDialog } from '../../context/NotificationContext';
 import InstituteHeader from '../../components/InstituteHeader';
 import {
   BookOpen,
@@ -18,13 +18,16 @@ import {
   Award,
   Clock,
   ExternalLink,
-  GraduationCap
+  GraduationCap,
+  Trash2
 } from 'lucide-react';
 
 const InstituteCourses = () => {
   const { user } = useAuth();
   const toast = useToast();
+  const { showConfirm } = useDialog();
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
   const [courses, setCourses] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -32,7 +35,8 @@ const InstituteCourses = () => {
   const loadCourses = async () => {
     setLoading(true);
     try {
-      const res = await api.getCourses();
+      // Fetch courses exclusive to this institute and its assigned trainers (strictly excludes central government courses)
+      const res = await api.getTrainerCourses();
       if (res.success) {
         setCourses(res.courses || []);
       }
@@ -46,6 +50,30 @@ const InstituteCourses = () => {
   useEffect(() => {
     loadCourses();
   }, []);
+
+  const handleDeleteCourse = async (courseId, courseTitle) => {
+    const confirmed = await showConfirm({
+      title: 'Delete Institute Course',
+      message: `Are you sure you want to delete "${courseTitle}"? All syllabus lessons and student enrollments for this course will be removed.`,
+      confirmText: 'Yes, Delete Course',
+      type: 'danger'
+    });
+
+    if (!confirmed) return;
+
+    setDeletingId(courseId);
+    try {
+      const res = await api.deleteCourse(courseId);
+      if (res.success) {
+        toast.success(`Course "${courseTitle}" deleted successfully!`, 'Course Deleted');
+        loadCourses();
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete course', 'Delete Error');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const categories = Array.from(new Set(courses.map(c => c.category).filter(Boolean)));
 
@@ -246,13 +274,23 @@ const InstituteCourses = () => {
                   <span>Assign Trainer</span>
                 </Link>
 
-                <Link
-                  to={`/trainee/course/${course._id}`}
-                  className="font-bold text-slate-700 hover:text-slate-900 flex items-center space-x-1 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-lg transition"
-                >
-                  <span>View Course</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </Link>
+                <div className="flex items-center gap-1.5">
+                  <Link
+                    to={`/trainee/course/${course._id}`}
+                    className="font-bold text-slate-700 hover:text-slate-900 flex items-center space-x-1 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-lg transition"
+                  >
+                    <span>View</span>
+                    <ExternalLink className="w-3 h-3 text-slate-400" />
+                  </Link>
+                  <button
+                    onClick={() => handleDeleteCourse(course._id, course.title)}
+                    disabled={deletingId === course._id}
+                    className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-rose-100 rounded-lg transition cursor-pointer disabled:opacity-50"
+                    title="Delete course"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}

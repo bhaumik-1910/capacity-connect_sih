@@ -12,6 +12,8 @@ const sessionSchema = new mongoose.Schema({
   courseTitle: { type: String, required: true },
   trainerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   trainerName: { type: String, required: true },
+  organizationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', default: null },
+  organizationName: { type: String, default: '' },
   
   title: { type: String, required: true },
   description: { type: String, default: '' },

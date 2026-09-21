@@ -35,14 +35,15 @@ const courseSchema = new mongoose.Schema({
   
   // Pricing & Monetization (Dual Tier: Free for Institute students vs Paid for direct external students)
   isGovernmentFree: { type: Boolean, default: false },
+  isGovernmentCourse: { type: Boolean, default: false }, // Flag for Central Government / Admin courses
   individualPrice: { type: Number, default: 999 }, // In INR for direct external public students
   currency: { type: String, default: 'INR' },
   
   trainerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  trainerName: { type: String, default: 'Dr. A. K. Sharma' },
+  trainerName: { type: String, default: '' },
   
   organizationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization' },
-  organizationName: { type: String, default: 'India Meteorological Department (IMD)' },
+  organizationName: { type: String, default: '' },
   
   competencyIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Competency' }],
   targetCompetencyLevel: { type: String, enum: ['Beginner', 'Working', 'Proficient', 'Expert'], default: 'Proficient' },

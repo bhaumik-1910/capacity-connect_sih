@@ -12,13 +12,14 @@ const getCourseAssessment = async (req, res) => {
       courseId: req.params.courseId,
       $or: [{ status: 'active' }, { status: { $exists: false } }]
     });
+
     if (!assessment) {
-      return res.status(404).json({ success: false, message: 'No active assessment found for this course' });
+      return res.status(404).json({ success: false, message: 'No active examination found for this course in the database' });
     }
 
     // For trainees taking the test, strip the correctOptionIndex and explanations to prevent cheating
     const isTrainerOrAdmin = ['trainer', 'platform_admin', 'org_admin'].includes(req.user.role);
-    
+
     const sanitizedQuestions = assessment.questions.map((q, idx) => ({
       _id: q._id,
       index: idx,
@@ -103,11 +104,11 @@ const submitAssessmentAttempt = async (req, res) => {
     if (mode === 'official') {
       const enrollment = await Enrollment.findOne({ traineeId: req.user._id, courseId: assessment.courseId });
       if (enrollment) {
+        if (percentage > (enrollment.bestAssessmentScore || 0)) {
+          enrollment.bestAssessmentScore = percentage;
+        }
         if (passed) {
           enrollment.assessmentPassed = true;
-          if (percentage > (enrollment.bestAssessmentScore || 0)) {
-            enrollment.bestAssessmentScore = percentage;
-          }
           if (enrollment.progressPercentage >= 100) {
             enrollment.status = 'completed';
             enrollment.completedAt = new Date();
@@ -185,7 +186,7 @@ const getMyAttempts = async (req, res) => {
 const createAssessment = async (req, res) => {
   try {
     const { courseId, title, instructions, durationMinutes, passPercentage, questions } = req.body;
-    
+
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
 

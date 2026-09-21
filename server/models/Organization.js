@@ -9,9 +9,9 @@ const organizationSchema = new mongoose.Schema({
     enum: ['Government Ministry', 'Autonomous Institute', 'University', 'Training Academy', 'R&D Center'],
     default: 'Autonomous Institute'
   },
-  domain: { type: String, default: 'imd.gov.in' },
-  website: { type: String, default: 'https://mausam.imd.gov.in' },
-  address: { type: String, default: 'Mausam Bhavan, Lodhi Road, New Delhi 110003' },
+  domain: { type: String, default: '' },
+  website: { type: String, default: '' },
+  address: { type: String, default: '' },
   contactPerson: {
     name: String,
     email: String,
@@ -19,8 +19,8 @@ const organizationSchema = new mongoose.Schema({
   },
   logo: { type: String, default: '' },
   signatory: {
-    name: { type: String, default: 'Dr. Mrutyunjay Mohapatra' },
-    designation: { type: String, default: 'Director General of Meteorology' },
+    name: { type: String, default: '' },
+    designation: { type: String, default: '' },
     signatureUrl: { type: String, default: '' }
   },
 

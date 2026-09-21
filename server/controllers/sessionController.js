@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Session = require('../models/Session');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
@@ -7,12 +8,22 @@ const { logAuditEvent } = require('../middleware/auditLogger');
 // @route GET /api/v1/sessions
 const getSessions = async (req, res) => {
   try {
-    const { courseId } = req.query;
+    const { courseId, upcoming, limit } = req.query;
     const filter = {};
-    if (courseId) filter.courseId = courseId;
+    if (courseId && mongoose.Types.ObjectId.isValid(courseId)) {
+      filter.courseId = courseId;
+    }
+
+    if (upcoming === 'true') {
+      filter.scheduledDate = { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) };
+      filter.status = { $ne: 'Cancelled' };
+    }
 
     if (req.user.role === 'trainer') {
-      filter.trainerId = req.user._id;
+      filter.$or = [
+        { trainerId: req.user._id },
+        { trainerName: new RegExp(`^${req.user.name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+      ];
     } else if (req.user.role === 'institute_admin' || req.user.role === 'org_admin') {
       const orgQuery = [];
       if (req.user.organizationId) orgQuery.push({ organizationId: req.user.organizationId });
@@ -34,13 +45,45 @@ const getSessions = async (req, res) => {
       const courseIds = instituteCourses.map(c => c._id);
 
       filter.$or = [
+        ...(req.user.organizationId ? [{ organizationId: req.user.organizationId }] : []),
+        ...(req.user.organizationName ? [{ organizationName: req.user.organizationName }] : []),
         { trainerId: { $in: [...trainerIds, req.user._id] } },
         { courseId: { $in: courseIds } }
       ];
+    } else if (req.user.role === 'trainee' || req.user.role === 'student') {
+      const enrollments = await Enrollment.find({ traineeId: req.user._id }).select('courseId');
+      const enrolledCourseIds = enrollments.map(e => e.courseId).filter(Boolean);
+
+      const orgQuery = [];
+      if (req.user.organizationId) orgQuery.push({ organizationId: req.user.organizationId });
+      if (req.user.organizationName) orgQuery.push({ organizationName: req.user.organizationName });
+
+      let orgCourseIds = [];
+      if (orgQuery.length > 0) {
+        const orgCourses = await Course.find({ $or: orgQuery }).select('_id');
+        orgCourseIds = orgCourses.map(c => c._id);
+      }
+
+      const allCourseIds = Array.from(new Set([...enrolledCourseIds.map(String), ...orgCourseIds.map(String)]));
+      if (allCourseIds.length > 0) {
+        filter.$or = [
+          { courseId: { $in: allCourseIds } },
+          ...(req.user.organizationId ? [{ organizationId: req.user.organizationId }] : [])
+        ];
+      }
     }
 
-    const sessions = await Session.find(filter).sort({ scheduledDate: 1 });
-    res.json({ success: true, sessions });
+    let queryBuilder = Session.find(filter)
+      .populate('courseId', 'title code thumbnail organizationName')
+      .populate('trainerId', 'name email designation')
+      .sort({ scheduledDate: 1 });
+
+    if (limit) {
+      queryBuilder = queryBuilder.limit(Number(limit));
+    }
+
+    const sessions = await queryBuilder.lean();
+    res.json({ success: true, count: sessions.length, sessions });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -69,12 +112,15 @@ const createSession = async (req, res) => {
       courseTitle: course.title,
       trainerId: targetTrainerId,
       trainerName: targetTrainerName,
+      organizationId: req.user.organizationId || course.organizationId || null,
+      organizationName: req.user.organizationName || course.organizationName || '',
       title,
       description,
-      scheduledDate,
+      scheduledDate: new Date(scheduledDate),
       durationMinutes: durationMinutes || 90,
       venueOrMeetingUrl: venueOrMeetingUrl || 'https://meet.gov.in/moes-live-lecture',
-      sessionType: sessionType || 'Live Virtual Class'
+      sessionType: sessionType || 'Live Virtual Class',
+      status: 'Scheduled'
     });
 
     await logAuditEvent({

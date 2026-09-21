@@ -29,9 +29,9 @@ const register = async (req, res) => {
       password,
       role: role || 'trainee',
       organizationId: organizationId || undefined,
-      organizationName: organizationName || 'India Meteorological Department (IMD)',
-      department: department || 'Meteorology',
-      designation: designation || 'Officer Trainee',
+      organizationName: organizationName || '',
+      department: department || '',
+      designation: designation || '',
       mobile: mobile || '',
       approvalStatus
     });

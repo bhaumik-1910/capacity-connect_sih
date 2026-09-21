@@ -20,7 +20,8 @@ import {
   PlusCircle,
   Edit,
   TrendingUp,
-  Users
+  Users,
+  Trash2
 } from 'lucide-react';
 import { useToast, useDialog } from '../../context/NotificationContext';
 import CourseEnrollmentsModal from '../../components/CourseEnrollmentsModal';
@@ -32,8 +33,9 @@ const CourseGovernance = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourseForEnrollments, setSelectedCourseForEnrollments] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const toast = useToast();
-  const { showPrompt } = useDialog();
+  const { showPrompt, showConfirm } = useDialog();
 
   const fetchCourses = async () => {
     setLoading(true);
@@ -73,6 +75,30 @@ const CourseGovernance = () => {
       }
     } catch (err) {
       toast.error(err.message, 'Governance Error');
+    }
+  };
+
+  const handleDeleteCourse = async (courseId, courseTitle) => {
+    const confirmed = await showConfirm({
+      title: 'Delete Course Syllabus',
+      message: `Are you sure you want to permanently delete "${courseTitle}"? All modules, assessments, and trainee enrollments associated with this course will be completely removed.`,
+      confirmText: 'Yes, Delete Course',
+      type: 'danger'
+    });
+
+    if (!confirmed) return;
+
+    setDeletingId(courseId);
+    try {
+      const res = await api.deleteCourse(courseId);
+      if (res.success) {
+        toast.success(`Course "${courseTitle}" deleted successfully!`, 'Course Deleted');
+        fetchCourses();
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete course', 'Delete Error');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -316,12 +342,22 @@ const CourseGovernance = () => {
                   ) : (
                     <button
                       onClick={() => handleUpdateStatus(course._id, 'archived')}
-                      className="px-3.5 py-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 font-bold text-xs rounded-xl border border-slate-200 hover:border-rose-200 transition flex items-center space-x-1.5 cursor-pointer"
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl border border-slate-200 transition flex items-center space-x-1.5 cursor-pointer"
                     >
                       <Archive className="w-3.5 h-3.5" />
                       <span>Archive Syllabus</span>
                     </button>
                   )}
+
+                  <button
+                    onClick={() => handleDeleteCourse(course._id, course.title)}
+                    disabled={deletingId === course._id}
+                    className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 hover:border-rose-300 transition flex items-center space-x-1 cursor-pointer disabled:opacity-50"
+                    title="Permanently delete course"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Delete</span>
+                  </button>
                 </div>
               </div>
             );
